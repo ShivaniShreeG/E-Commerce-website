@@ -1,1 +1,39 @@
-.env 
+# Node modules (backend & frontend)
+client/node_modules/
+server/node_modules/
+
+# Environment files
+client/.env
+server/.env
+.env
+
+# Build files
+client/build/
+server/build/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+
+# Test & coverage folders
+coverage/
+*.lcov
+
+# Temporary/uploads
+uploads/
+temp/
+tmp/
+public/uploads/
+server/invoices/
