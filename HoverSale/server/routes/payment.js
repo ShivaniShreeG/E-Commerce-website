@@ -1,43 +1,67 @@
 const express = require('express');
 const router = express.Router();
-const QRCode = require('qrcode');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 require('dotenv').config();
 
-const OWNER_UPI_ID = process.env.OWNER_UPI_ID || 'defaultupi@bank'; // fallback
-const payeeNam = "HoverSale";
-const txnNot = "Payment for HoverSale order";
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
-// Utility to construct UPI URL
-function generateUpiUrl({ upiId, payeeName, amount, txnNote }) {
-  return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeNam)}&am=${amount}&cu=INR&tn=${encodeURIComponent(txnNot)}`;
-}
+// Create Razorpay Order
+router.post('/razorpay-order', async (req, res) => {
+  const { amount } = req.body;
 
-// Route to get UPI QR Code
-router.post('/upi', async (req, res) => {
-  const { name, amount, txnNote } = req.body;
-
-  if (!name || !amount || isNaN(amount)) {
-    return res.status(400).json({ error: 'Missing or invalid payment details.' });
+  if (!amount || isNaN(amount)) {
+    return res.status(400).json({ error: 'Invalid amount' });
   }
 
   try {
-    const upiUrl = generateUpiUrl({
-      upiId: OWNER_UPI_ID,
-      name,
-      amount,
-      txnNote: txnNote || 'HoverSale Order Payment'
+    const order = await razorpay.orders.create({
+      amount: Math.round(parseFloat(amount) * 100), // convert to paise
+      currency: 'INR',
+      receipt: `order_rcptid_${Date.now()}`,
     });
 
-    const qrCodeDataUrl = await QRCode.toDataURL(upiUrl, {
-      width: 300,
-      margin: 1
-    });
-
-    res.json({ qrCode: qrCodeDataUrl, upiUrl });
-  } catch (err) {
-    console.error('QR Code Generation Error:', err);
-    res.status(500).json({ error: 'Failed to generate QR code.' });
+    res.json(order); // contains id, amount, currency, etc.
+  } catch (error) {
+    console.error('Razorpay order error:', error);
+    res.status(500).json({ error: 'Failed to create Razorpay order' });
   }
+});
+
+// Verify Razorpay Payment Signature
+router.post('/verify-payment', (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    orderId,
+    amount,
+  } = req.body;
+
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return res.status(400).json({ success: false, message: 'Missing Razorpay fields' });
+  }
+
+  const generated_signature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest('hex');
+
+  if (generated_signature === razorpay_signature) {
+    console.log(`✅ Payment verified for order ${orderId} - ${razorpay_payment_id}`);
+    return res.json({ success: true });
+  } else {
+    console.warn('❌ Signature mismatch! Possible tampering.');
+    return res.status(400).json({ success: false, message: 'Signature verification failed' });
+  }
+});
+
+// ✅ Expose Razorpay Key to frontend (safe)
+router.get('/razorpay-key', (req, res) => {
+  res.json({ key: process.env.RAZORPAY_KEY_ID });
 });
 
 module.exports = router;

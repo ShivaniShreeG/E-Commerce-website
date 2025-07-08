@@ -15,6 +15,7 @@ import Navbar from './components/Navbar';
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
 import UPIPayment from './pages/UPIPayment';
+import RazorpayPayment from './pages/RazorpayPayment';
 
 function AppWrapper() {
   const location = useLocation();
@@ -43,6 +44,7 @@ function AppWrapper() {
           <Route path="/profile" element={<Profile userId={userId} />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/upi-payment" element={<UPIPayment />} />
+          <Route path="/razorpay-payment" element={<RazorpayPayment />} />
         </Routes>
       </div>
     </>

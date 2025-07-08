@@ -1,3 +1,4 @@
+// PlaceOrder.js
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -23,29 +24,31 @@ const PlaceOrder = () => {
   const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
   const [totalPrice, setTotalPrice] = useState(0);
 
+  // ✅ Fetch profile and saved addresses
   useEffect(() => {
-    // Fetch profile
+    if (!userId) return;
+
     fetch(`http://localhost:5000/api/profile/${userId}`)
       .then(res => res.json())
       .then(data => {
         setProfile(data);
-        setSelectedAddress(data.address); // default to profile address
+        setSelectedAddress(data.address || '');
       })
       .catch(err => console.error('Failed to load profile', err));
 
-    // Fetch saved addresses
     fetch(`http://localhost:5000/api/user-addresses/${userId}`)
       .then(res => res.json())
       .then(data => setSavedAddresses(data || []))
       .catch(err => console.error('Failed to fetch addresses', err));
   }, [userId]);
 
+  // ✅ Calculate total
   useEffect(() => {
     if (cartItems.length > 0) {
       const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      setTotalPrice(total.toFixed(2));
+      setTotalPrice(Number(total.toFixed(2)));
     } else if (productId && price) {
-      setTotalPrice((price * quantity).toFixed(2));
+      setTotalPrice(Number((price * quantity).toFixed(2)));
     }
   }, [cartItems, price, quantity, productId]);
 
@@ -74,7 +77,7 @@ const PlaceOrder = () => {
       email: profile.email,
       address: selectedAddress,
       paymentMethod,
-      totalPrice: parseFloat(totalPrice),
+      totalPrice,
       items: cartItems.length > 0
         ? cartItems.map(item => ({
             productId: item.product_id,
@@ -97,8 +100,8 @@ const PlaceOrder = () => {
         return;
       }
 
-      // Save new address if applicable
-      if (showNewAddressInput && newAddress) {
+      // ✅ Save new address if applicable
+      if (showNewAddressInput && newAddress.trim()) {
         await fetch('http://localhost:5000/api/user-addresses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -106,10 +109,10 @@ const PlaceOrder = () => {
         });
       }
 
-      if (paymentMethod === 'UPI') {
-        toast.success("✅ Order placed! Redirecting to UPI...");
-        return setTimeout(() => {
-          navigate('/upi-payment', {
+      if (paymentMethod === 'UPI' || paymentMethod === 'Credit Card') {
+        toast.success(`✅ Order placed! Redirecting to ${paymentMethod}...`);
+        setTimeout(() => {
+          navigate('/razorpay-payment', {
             state: {
               amount: totalPrice,
               orderId: result.orderId,
@@ -119,10 +122,10 @@ const PlaceOrder = () => {
             },
           });
         }, 1500);
+        return;
       }
 
-      toast.success("✅ Order placed successfully!");
-
+      // ✅ Remove items from cart if placed
       if (cartItems.length > 0) {
         const productIds = cartItems.map(item => item.product_id);
         await fetch('http://localhost:5000/api/cart/remove-items', {
@@ -132,6 +135,7 @@ const PlaceOrder = () => {
         });
       }
 
+      toast.success("✅ Order placed successfully!");
       setTimeout(() => navigate('/orders'), 2000);
     } catch (err) {
       console.error('Order error:', err);
@@ -145,32 +149,32 @@ const PlaceOrder = () => {
       <form onSubmit={handleSubmit} style={styles.form}>
         <div style={styles.formSection}>
           <label><strong>Choose Delivery Address:</strong></label>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={selectedAddress === profile.address}
-                onChange={() => setSelectedAddress(profile.address)}
-              />
-              Primary Address (From Profile): {profile.address}
-            </label>
-
+            {profile.address && (
+              <label style={styles.checkboxLabel}>
+                <input
+                  type="radio"
+                  name="address"
+                  checked={selectedAddress === profile.address}
+                  onChange={() => setSelectedAddress(profile.address)}
+                />
+                Primary Address: {profile.address}
+              </label>
+            )}
             {savedAddresses.map((addr, idx) => (
               <label key={idx} style={styles.checkboxLabel}>
                 <input
-                  type="checkbox"
+                  type="radio"
+                  name="address"
                   checked={selectedAddress === addr}
                   onChange={() => setSelectedAddress(addr)}
                 />
                 {addr}
               </label>
             ))}
-
             <button type="button" onClick={() => setShowNewAddressInput(!showNewAddressInput)} style={styles.addNewBtn}>
               {showNewAddressInput ? 'Cancel' : '+ Add New Address'}
             </button>
-
             {showNewAddressInput && (
               <textarea
                 value={newAddress}
@@ -188,8 +192,8 @@ const PlaceOrder = () => {
           <label><strong>Payment Method:</strong></label>
           <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} style={styles.select}>
             <option value="Cash on Delivery">Cash on Delivery</option>
-            <option value="UPI">UPI</option>
-            <option value="Credit Card">Credit Card</option>
+            <option value="UPI">UPI (via Razorpay)</option>
+            <option value="Credit Card">Credit Card (via Razorpay)</option>
           </select>
         </div>
 
@@ -217,6 +221,7 @@ const PlaceOrder = () => {
   );
 };
 
+// ✅ Styles (unchanged)
 const styles = {
   container: { padding: '40px 20px', backgroundColor: '#f9f3ec', minHeight: '100vh' },
   heading: { textAlign: 'center', marginBottom: '30px', color: '#333' },
@@ -246,4 +251,4 @@ const styles = {
   },
 };
 
-export default PlaceOrder;  
+export default PlaceOrder;

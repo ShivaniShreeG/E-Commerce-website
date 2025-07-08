@@ -17,7 +17,7 @@ const UPIPayment = () => {
         icon: 'error',
         title: 'Invalid Payment',
         text: 'Invalid payment session!',
-      }).then(() => navigate('/order'));
+      }).then(() => navigate('/orders'));
       return;
     }
 
