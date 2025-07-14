@@ -37,87 +37,50 @@ function ForgotPassword() {
     }
   };
 
-  const pageStyle = {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: 'linear-gradient(to right, #ff758c, #ffb88c)',
-    fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-  };
-
-  const boxStyle = {
-    backgroundColor: '#fff',
-    padding: '40px 30px',
-    borderRadius: '12px',
-    boxShadow: '0 0 15px rgba(0, 0, 0, 0.2)',
-    width: '100%',
-    maxWidth: '400px',
-    textAlign: 'center',
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '15px',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    fontSize: '15px',
-    boxSizing: 'border-box',
-  };
-
-  const buttonStyle = {
-    width: '50%',
-    padding: '12px',
-    backgroundColor: '#ff6b81',
-    color: 'white',
-    border: 'none',
-    fontSize: '16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    marginBottom: '10px',
-  };
-
-  const secondaryButton = {
-    ...buttonStyle,
-    backgroundColor: '#ff6b81',
-  };
-
-  const messageStyle = {
-    marginBottom: '15px',
-    fontWeight: 'bold',
-    color: message ? 'green' : 'red',
-  };
-
   return (
-    <div style={pageStyle}>
-      <div style={boxStyle}>
-        <h2>Reset Password</h2>
-        {message && <div style={messageStyle}>{message}</div>}
-        {error && <div style={{ ...messageStyle, color: 'red' }}>{error}</div>}
+    <div className="min-h-screen flex justify-center items-center bg-gradient-to-r from-pink-500 to-orange-300 font-sans">
+      <div className="bg-white p-10 rounded-xl shadow-lg w-full max-w-md text-center">
+        <h2 className="text-2xl font-semibold mb-6">Reset Password</h2>
 
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setMessage('');
-              setError('');
-            }}
-            required
-            style={inputStyle}
-          />
-          <div>
-          <button type="submit" style={buttonStyle}>
-            Send Reset Link
-          </button>
-          </div>
-          <button type="button" onClick={() => navigate('/')} style={secondaryButton}>
-            Back to Login
-          </button>
-        </form>
+        {message && (
+          <div className="mb-4 font-semibold text-green-600">{message}</div>
+        )}
+        {error && (
+          <div className="mb-4 font-semibold text-red-600">{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+  <input
+    type="email"
+    placeholder="Enter your email"
+    value={email}
+    onChange={(e) => {
+      setEmail(e.target.value);
+      setMessage('');
+      setError('');
+    }}
+    required
+    className="w-full px-4 py-3 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-pink-400"
+  />
+
+  {/* Buttons in a flex row with gap */}
+  <div className="flex justify-center gap-4">
+    <button
+      type="submit"
+      className="w-1/2 py-3 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition duration-200"
+    >
+      Send Reset Link
+    </button>
+
+    <button
+      type="button"
+      onClick={() => navigate('/')}
+      className="w-1/2 py-3 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-200"
+    >
+      Back to Login
+    </button>
+  </div>
+</form>
       </div>
     </div>
   );

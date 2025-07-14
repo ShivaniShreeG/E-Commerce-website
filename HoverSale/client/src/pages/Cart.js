@@ -116,46 +116,53 @@ const Cart = () => {
   const totalPrice = cartItems.reduce((acc, item) =>
     selectedItems[item.product_id] ? acc + item.price * item.quantity : acc, 0);
 
-  if (loading) return <p style={{ padding: '60px', textAlign: 'center' }}>Loading cart...</p>;
+  if (loading) return <p className="p-16 text-center text-gray-600">Loading cart...</p>;
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>🛒 Your Shopping Cart</h2>
+    <div className="bg-orange-50 py-20 px-4 min-h-screen">
+      <h2 className="text-center text-2xl font-semibold text-gray-800 mb-8">🛒 Your Shopping Cart</h2>
 
       {cartItems.length === 0 ? (
-        <div style={styles.empty}>
-          <img src="https://cdn-icons-png.flaticon.com/512/11329/11329460.png" alt="empty" style={{ width: '180px' }} />
+        <div className="text-center mt-10 text-gray-500">
+          <img src="https://cdn-icons-png.flaticon.com/512/11329/11329460.png" alt="empty" className="w-44 mx-auto mb-4" />
           <p>No items in your cart.</p>
         </div>
       ) : (
         <>
-          <div style={styles.grid}>
+          <div className="flex flex-wrap justify-center gap-6">
             {cartItems.map(item => (
-              <div key={item.product_id} style={styles.card}>
+              <div key={item.product_id} className="relative w-full max-w-xl bg-white rounded-lg p-4 shadow-md">
                 {item.stock < 20 && item.stock > 0 && (
-                  <div style={styles.stockTag}>Only {item.stock} left!</div>
+                  <div className="absolute top-2 right-2 bg-yellow-400 text-black text-xs px-2 py-1 rounded">
+                    Only {item.stock} left!
+                  </div>
                 )}
-                <div style={styles.row}>
+                <div className="flex items-center gap-4">
                   <input
                     type="checkbox"
                     checked={!!selectedItems[item.product_id]}
                     disabled={item.stock <= 0}
                     onChange={() => toggleSelect(item.product_id, item.stock)}
+                    className="w-4 h-4"
                   />
-                  <img src={`http://localhost:5000/${item.image_url}`} alt={item.name} style={styles.image} />
-                  <div style={styles.details}>
-                    <h3>{item.name}</h3>
-                    <p>Price: ₹{item.price}</p>
-                    <div style={styles.quantity}>
-                      <button onClick={() => updateQuantity(item.product_id, -1, item.stock)}>-</button>
+                  <img
+                    src={`http://localhost:5000/${item.image_url}`}
+                    alt={item.name}
+                    className="w-24 h-24 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">{item.name}</h3>
+                    <p className="text-sm text-gray-700">Price: ₹{item.price}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => updateQuantity(item.product_id, -1, item.stock)}>-</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product_id, 1, item.stock)}>+</button>
+                      <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => updateQuantity(item.product_id, 1, item.stock)}>+</button>
                     </div>
-                    {item.stock === 0 && <p style={styles.outOfStock}>Out of stock</p>}
-                    <p style={{ margin: '8px 0' }}>Subtotal: ₹{item.price * item.quantity}</p>
-                    <div>
-                      <button style={styles.buyNow} onClick={() => handleBuyNowSingle(item)}>Buy Now</button>
-                      <button style={styles.remove} onClick={() => handleRemove(item.product_id)}>Remove</button>
+                    {item.stock === 0 && <p className="text-red-600 font-semibold mt-1">Out of stock</p>}
+                    <p className="mt-2">Subtotal: ₹{item.price * item.quantity}</p>
+                    <div className="mt-3 flex gap-3">
+                      <button className="bg-green-600 text-white px-4 py-1 rounded" onClick={() => handleBuyNowSingle(item)}>Buy Now</button>
+                      <button className="bg-red-600 text-white px-4 py-1 rounded" onClick={() => handleRemove(item.product_id)}>Remove</button>
                     </div>
                   </div>
                 </div>
@@ -163,120 +170,16 @@ const Cart = () => {
             ))}
           </div>
 
-          <div style={styles.totalSection}>
-            <h3>Total Amount: ₹{totalPrice}</h3>
-            <button onClick={handleOrderNow} style={styles.placeOrder}>Place Order</button>
+          <div className="max-w-3xl mx-auto mt-10 bg-white p-6 rounded-lg shadow text-right">
+            <h3 className="text-xl font-semibold mb-4">Total Amount: ₹{totalPrice}</h3>
+            <button onClick={handleOrderNow} className="bg-blue-600 text-white font-bold px-6 py-2 rounded">
+              Place Order
+            </button>
           </div>
         </>
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    background: '#fff8f0',
-    padding: '80px 20px 40px',
-    minHeight: '100vh',
-  },
-  heading: {
-    textAlign: 'center',
-    color: '#222',
-    marginBottom: '30px',
-  },
-  empty: {
-    textAlign: 'center',
-    marginTop: '50px',
-    color: '#777',
-  },
-  grid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: '20px',
-  },
-  card: {
-    position: 'relative',
-    width: '45%',
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    padding: '15px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-  },
-  stockTag: {
-    position: 'absolute',
-    top: '10px',
-    right: '10px',
-    backgroundColor: '#ffc107',
-    color: '#000',
-    fontSize: '0.8rem',
-    padding: '4px 8px',
-    borderRadius: '5px',
-  },
-  row: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  image: {
-    width: '100px',
-    height: '100px',
-    borderRadius: '10px',
-    objectFit: 'cover',
-    margin: '0 15px',
-  },
-  details: {
-    flex: 1,
-  },
-  quantity: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginTop: '10px',
-  },
-  outOfStock: {
-    color: '#dc3545',
-    fontWeight: 'bold',
-    marginTop: '8px',
-  },
-  buyNow: {
-    marginTop: '10px',
-    padding: '6px 12px',
-    backgroundColor: '#28a745',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    marginRight: '10px',
-  },
-  remove: {
-    marginTop: '10px',
-    padding: '6px 12px',
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  totalSection: {
-    maxWidth: '800px',
-    margin: '40px auto 0',
-    backgroundColor: '#fff',
-    padding: '20px 30px',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    textAlign: 'right',
-  },
-  placeOrder: {
-    marginTop: '10px',
-    padding: '12px 24px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
 };
 
 export default Cart;

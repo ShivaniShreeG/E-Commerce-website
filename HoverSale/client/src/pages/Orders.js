@@ -31,135 +31,139 @@ function Orders() {
   }, [userId]);
 
   useEffect(() => {
-    setFilteredOrders(
-      filter === 'All' ? orders : orders.filter(o => o.status === filter)
-    );
+    setFilteredOrders(filter === 'All' ? orders : orders.filter(o => o.status === filter));
     setCurrentPage(1);
   }, [filter, orders]);
 
   const cancelOrder = async (orderId) => {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: 'Do you want to cancel this order?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, cancel it!',
-    cancelButtonText: 'No',
-  });
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to cancel this order?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, cancel it!',
+      cancelButtonText: 'No',
+    });
 
-  if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
-  try {
-    const res = await fetch(`http://localhost:5000/api/order/${orderId}/cancel`, { method: 'PATCH' });
-    const data = await res.json();
-    if (res.ok) {
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Canceled' } : o));
-      Swal.fire('Canceled!', data.message || 'Order has been canceled.', 'success');
-    } else {
-      Swal.fire('Error', data.error || data.message, 'error');
+    try {
+      const res = await fetch(`http://localhost:5000/api/order/${orderId}/cancel`, { method: 'PATCH' });
+      const data = await res.json();
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Canceled' } : o));
+        Swal.fire('Canceled!', data.message || 'Order has been canceled.', 'success');
+      } else {
+        Swal.fire('Error', data.error || data.message, 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'Something went wrong while cancelling the order.', 'error');
     }
-  } catch (err) {
-    console.error(err);
-    Swal.fire('Error', 'Something went wrong while cancelling the order.', 'error');
-  }
-};
-
+  };
 
   const reorder = (orderId) => {
     const order = orders.find(o => o.id === orderId);
-    if (!order) return alert("Order not found.");
+    if (!order) return Swal.fire('Error', 'Order not found.', 'error');
     const selectedItems = order.items.map(item => ({
       ...item,
       selected: true,
       newQuantity: item.quantity
     }));
     setReorderData({
-  orderId: order.id,
-  name: order.name,
-  email: order.email,
-  phone: order.phone,
-  address: order.address,
-  payment_method: "Cash on Delivery",
-  items: selectedItems
-});
-
+      orderId: order.id,
+      name: order.name,
+      email: order.email,
+      phone: order.phone,
+      address: order.address,
+      payment_method: 'Cash on Delivery',
+      items: selectedItems
+    });
     setShowReorderForm(true);
   };
-  
-
 
   const submitReorder = async () => {
-  const { name, email, phone, address, payment_method, items } = reorderData;
-  const filteredItems = items.filter(i => i.selected).map(i => ({
-    product_id: i.product_id,
-    quantity: parseInt(i.newQuantity),
-    price: i.price
-  }));
+    const { name, email, phone, address, payment_method, items } = reorderData;
 
-  if (filteredItems.length === 0) {
-    return Swal.fire('Warning', 'Please select at least one item.', 'warning');
-  }
+    const filteredItems = items
+      .filter(i => i.selected !== false)
+      .map(i => ({
+        product_id: i.product_id,
+        quantity: parseInt(i.newQuantity),
+        price: i.price
+      }));
 
-  try {
-    const res = await fetch(`http://localhost:5000/api/order/reorder-custom`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, name, email, phone, address, payment_method, items: filteredItems })
-    });
+    if (filteredItems.length === 0)
+      return Swal.fire('Warning', 'Please select at least one item.', 'warning');
 
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      return Swal.fire('Error', data.error || 'Reorder failed', 'error');
-    }
+    const totalPrice = filteredItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
-    setShowReorderForm(false);
-    await Swal.fire('Success', data.message || 'Reorder placed successfully.', 'success');
-
-    if (payment_method === 'UPI') {
-      const amount = filteredItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-      navigate('/upi-payment', {
-        state: {
-          amount,
-          orderId: data.orderId || 'TEMP',
+    try {
+      const res = await fetch(`http://localhost:5000/api/order/reorder-custom`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
           name,
           email,
-          phone
-        }
+          phone,
+          address,
+          payment_method,
+          total_price: totalPrice,
+          items: filteredItems
+        })
       });
-    }
 
-  } catch (err) {
-    console.error("Reorder failed:", err);
-    Swal.fire('Error', 'Something went wrong during reorder.', 'error');
-  }
-};
+      const data = await res.json();
+      if (!res.ok || data.error)
+        return Swal.fire('Error', data.error || 'Reorder failed', 'error');
+
+      setShowReorderForm(false);
+      Swal.fire('Success', data.message || 'Reorder placed successfully.', 'success');
+
+      if (payment_method === 'UPI' || payment_method === 'Credit Card') {
+        setTimeout(() => {
+          navigate('/razorpay-payment', {
+            state: {
+              amount: totalPrice,
+              orderId: data.orderId,
+              name,
+              email,
+              phone,
+            }
+          });
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('Reorder failed:', err);
+      Swal.fire('Error', 'Something went wrong during reorder.', 'error');
+    }
+  };
 
   const sendInvoiceEmail = async (orderId) => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/order/email-invoice`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, userId })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      Swal.fire('Success', data.message || 'Invoice sent to email.', 'success');
-    } else {
-      Swal.fire('Error', data.error || 'Failed to send invoice.', 'error');
+    try {
+      const res = await fetch(`http://localhost:5000/api/order/email-invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, userId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        Swal.fire('Success', data.message || 'Invoice sent to email.', 'success');
+      } else {
+        Swal.fire('Error', data.error || 'Failed to send invoice.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'Something went wrong.', 'error');
     }
-  } catch (err) {
-    console.error(err);
-    Swal.fire('Error', 'Something went wrong.', 'error');
-  }
-};
+  };
 
-
-  const toBase64 = (url) =>
-    fetch(url).then(res => res.blob()).then(blob => new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    }));
+  const toBase64 = (url) => fetch(url).then(res => res.blob()).then(blob => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  }));
 
   const generateInvoicePDF = async (doc, order, margin, logoBase64) => {
     let y = margin;
@@ -172,7 +176,7 @@ function Orders() {
     y += 10;
     doc.setFontSize(11);
     doc.setTextColor(50);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.text(`Order ID: ${order.id}`, margin, y);
     y += 6;
     doc.text(`Date: ${new Date(order.order_date).toLocaleString()}`, margin, y);
@@ -185,7 +189,7 @@ function Orders() {
     doc.text(addressLines, margin + 5, y);
     y += addressLines.length * 6 + 6;
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFillColor(230);
     doc.rect(margin, y, 170, 10, 'F');
     doc.setTextColor(0);
@@ -194,7 +198,7 @@ function Orders() {
     doc.text('Price (Rs.)', margin + 115, y + 7);
     doc.text('Total (Rs.)', margin + 150, y + 7);
     y += 12;
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setDrawColor(220);
     if (Array.isArray(order.items)) {
@@ -212,7 +216,7 @@ function Orders() {
       y += 10;
     }
     y += 6;
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setDrawColor(200);
     doc.line(margin, y, 190, y);
     y += 10;
@@ -237,166 +241,102 @@ function Orders() {
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
   return (
-    <div style={{ background: "linear-gradient(to right, #ff758c, #ffb88c)",}}>
-    <div style={{ padding: '20px', maxWidth: '900px', margin: 'auto' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>My Orders</h2>
+    <div className="min-h-screen bg-gradient-to-r from-pink-400 to-orange-300 py-10">
+      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">My Orders</h2>
 
-      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-        {['All', 'Pending', 'Shipped', 'Delivered', 'Canceled'].map((status) => (
-          <button key={status} onClick={() => setFilter(status)} style={{
-            padding: '8px 12px', marginRight: '10px',
-            backgroundColor: filter === status ? '#007bff' : '#ccc',
-            color: filter === status ? '#fff' : '#000',
-            border: 'none', borderRadius: '5px', cursor: 'pointer'
-          }}>{status}</button>
-        ))}
-      </div>
-
-      {currentOrders.map((order) => (
-        <div key={order.id} style={cardStyle}>
-          <p><strong>Order ID:</strong> {order.id}</p>
-          <p><strong>Date:</strong> {new Date(order.order_date).toLocaleString()}</p>
-          <p><strong>Status:</strong> {order.status}</p>
-          <p><strong>Delivery Address:</strong> {order.address}</p>
-
-          {Array.isArray(order.items) && order.items.length > 0 && (
-            <div style={{ marginTop: '15px' }}>
-              {order.items.map((item, index) => (
-                <div key={index} style={itemStyle}>
-                  <img src={`http://localhost:5000/${item.product_image}`} alt={item.product_name} style={imageStyle} />
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>{item.product_name}</p>
-                    <p style={{ margin: '2px 0' }}>Qty: {item.quantity}</p>
-                    <p style={{ margin: '2px 0' }}>Price: ₹{item.price}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <p style={{ fontWeight: 'bold', marginTop: '10px' }}>Total: ₹{order.total_price}</p>
-          
-          <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
-            <button onClick={() => downloadInvoice(order)} style={buttonStyle}><FaFileInvoice style={iconStyle} /> Invoice</button>
-            <button onClick={() => sendInvoiceEmail(order.id)} style={buttonStyle}><FaEnvelope style={iconStyle} /> Email</button>
-            {order.status !== 'Canceled' && <button onClick={() => cancelOrder(order.id)} style={{ ...buttonStyle, backgroundColor: '#dc3545' }}><FaTimes style={iconStyle} /> Cancel</button>}
-            {order.status === 'Canceled' && <button onClick={() => reorder(order.id)} style={{ ...buttonStyle, backgroundColor: '#28a745' }}><FaRedo style={iconStyle} /> Reorder</button>}
-          </div>
+        <div className="flex justify-center mb-6 flex-wrap gap-2">
+          {['All', 'Pending', 'Shipped', 'Delivered', 'Canceled'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded-md font-medium ${
+                filter === status ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-800'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
         </div>
-      ))}
 
-      <div style={{ textAlign: 'center', marginTop: '10px' }}>
-        <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} style={paginationBtn}>Prev</button>
-        <span style={{ margin: '0 10px' }}>Page {currentPage} of {totalPages}</span>
-        <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} style={paginationBtn}>Next</button>
-      </div>
+        {currentOrders.map((order) => (
+          <div key={order.id} className="bg-gray-100 rounded-lg shadow-sm p-4 mb-6">
+            <p><strong>Order ID:</strong> {order.id}</p>
+            <p><strong>Date:</strong> {new Date(order.order_date).toLocaleString()}</p>
+            <p><strong>Status:</strong> {order.status}</p>
+            <p><strong>Delivery Address:</strong> {order.address}</p>
 
-      {showReorderForm && reorderData && (
-  <div style={overlayStyle}>
-    <div style={modalStyle}>
-      <h2 style={{ textAlign: 'center', marginBottom: '15px', color: '#007bff' }}>Reorder Form</h2>
+            {Array.isArray(order.items) && (
+              <div className="mt-4 grid gap-3">
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="flex gap-4 bg-white rounded-md p-3 shadow">
+                    <img src={`http://localhost:5000/${item.product_image}`} alt={item.product_name} className="w-20 h-20 object-cover rounded" />
+                    <div>
+                      <p className="font-semibold">{item.product_name}</p>
+                      <p>Qty: {item.quantity}</p>
+                      <p>Price: ₹{item.price}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-      <label style={labelStyle}>Full Name</label>
-      <input
-        type="text"
-        value={reorderData.name}
-        onChange={e => setReorderData(prev => ({ ...prev, name: e.target.value }))}
-        style={inputStyle}
-      />
+            <p className="font-bold mt-4">Total: ₹{order.total_price}</p>
 
-      <label style={labelStyle}>Email</label>
-      <input
-        type="email"
-        value={reorderData.email}
-        onChange={e => setReorderData(prev => ({ ...prev, email: e.target.value }))}
-        style={inputStyle}
-      />
-
-      <label style={labelStyle}>Phone</label>
-      <input
-        type="text"
-        value={reorderData.phone}
-        onChange={e => setReorderData(prev => ({ ...prev, phone: e.target.value }))}
-        style={inputStyle}
-      />
-
-      <label style={labelStyle}>Delivery Address</label>
-      <textarea
-        value={reorderData.address}
-        onChange={e => setReorderData(prev => ({ ...prev, address: e.target.value }))}
-        rows={3}
-        style={textareaStyle}
-      />
-
-      <label style={labelStyle}>Payment Method</label>
-      <select
-        value={reorderData.payment_method}
-        onChange={e => setReorderData(prev => ({ ...prev, payment_method: e.target.value }))}
-        style={selectStyle}
-      >
-        <option>Cash on Delivery</option>
-        <option>UPI</option>
-        <option>Card</option>
-        <option>Net Banking</option>
-      </select>
-
-      <h4 style={{ marginTop: '20px' }}>Select Items:</h4>
-      <div style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '20px' }}>
-        {reorderData.items.map((item, index) => (
-          <div key={index} style={itemRowStyle}>
-            <input
-              type="checkbox"
-              checked={item.selected}
-              onChange={(e) => {
-                const updatedItems = [...reorderData.items];
-                updatedItems[index].selected = e.target.checked;
-                setReorderData(prev => ({ ...prev, items: updatedItems }));
-              }}
-            />
-            <span style={{ marginLeft: '10px', fontWeight: 'bold', flex: 1 }}>{item.product_name}</span>
-            <input
-              type="number"
-              min={1}
-              value={item.newQuantity}
-              onChange={(e) => {
-                const updatedItems = [...reorderData.items];
-                updatedItems[index].newQuantity = e.target.value;
-                setReorderData(prev => ({ ...prev, items: updatedItems }));
-              }}
-              style={qtyInputStyle}
-            />
+            <div className="flex flex-wrap gap-3 mt-4">
+              <button onClick={() => downloadInvoice(order)} className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center gap-2"><FaFileInvoice /> Invoice</button>
+              <button onClick={() => sendInvoiceEmail(order.id)} className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded flex items-center gap-2"><FaEnvelope /> Email</button>
+              {order.status !== 'Canceled' && (
+                <button onClick={() => cancelOrder(order.id)} className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center gap-2"><FaTimes /> Cancel</button>
+              )}
+              {order.status === 'Canceled' && (
+                <button onClick={() => reorder(order.id)} className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded flex items-center gap-2"><FaRedo /> Reorder</button>
+              )}
+            </div>
           </div>
         ))}
-      </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-        <button onClick={submitReorder} style={buttonStyle}>Place Order</button>
-        <button onClick={() => setShowReorderForm(false)} style={cancelButtonStyle}>Cancel</button>
-      </div>
-    </div>
-  </div>
-)}
+        {showReorderForm && reorderData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg overflow-y-auto max-h-[90vh]">
+              <h3 className="text-xl font-semibold mb-4 text-center">Reorder Details</h3>
+              <input type="text" className="w-full mb-2 p-2 border rounded" value={reorderData.name} onChange={e => setReorderData({ ...reorderData, name: e.target.value })} placeholder="Name" />
+              <input type="email" className="w-full mb-2 p-2 border rounded" value={reorderData.email} onChange={e => setReorderData({ ...reorderData, email: e.target.value })} placeholder="Email" />
+              <input type="tel" className="w-full mb-2 p-2 border rounded" value={reorderData.phone} onChange={e => setReorderData({ ...reorderData, phone: e.target.value })} placeholder="Phone" />
+              <textarea className="w-full mb-2 p-2 border rounded" value={reorderData.address} onChange={e => setReorderData({ ...reorderData, address: e.target.value })} placeholder="Address" />
+              <select className="w-full mb-4 p-2 border rounded" value={reorderData.payment_method} onChange={e => setReorderData({ ...reorderData, payment_method: e.target.value })}>
+                <option value="Cash on Delivery">Cash on Delivery</option>
+                <option value="UPI">UPI</option>
+                <option value="Credit Card">Credit Card</option>
+              </select>
+              <div className="mb-4">
+                {reorderData.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center mb-2">
+                    <div>{item.product_name}</div>
+                    <input type="number" className="w-16 border p-1 rounded" min="1" value={item.newQuantity} onChange={e => {
+                      const newItems = [...reorderData.items];
+                      newItems[idx].newQuantity = e.target.value;
+                      setReorderData({ ...reorderData, items: newItems });
+                    }} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end gap-4">
+                <button onClick={submitReorder} className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">Confirm</button>
+                <button onClick={() => setShowReorderForm(false)} className="bg-gray-400 hover:bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
-    </div>
+        <div className="flex justify-center items-center gap-4 mt-6">
+          <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50">Prev</button>
+          <span>Page {currentPage} of {totalPages}</span>
+          <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50">Next</button>
+        </div>
+      </div>
     </div>
   );
 }
-
-// Styles
-const cardStyle = { border: '1px solid #ccc', borderRadius: '10px', padding: '20px', marginBottom: '25px', backgroundColor: '#f9f9f9', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' };
-const itemStyle = { display: 'flex', gap: '15px', marginBottom: '10px', backgroundColor: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' };
-const imageStyle = { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px' };
-const buttonStyle = { padding: '8px 14px', border: 'none', borderRadius: '5px', backgroundColor: '#007bff', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' };
-const iconStyle = { fontSize: '14px' };
-const paginationBtn = { padding: '6px 10px', margin: '0 5px', border: '1px solid #007bff', borderRadius: '4px', backgroundColor: '#007bff', color: '#fff', cursor: 'pointer', minWidth: '60px' };
-const overlayStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalStyle = { background: '#fff', padding: '25px', borderRadius: '8px', width: '400px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
-const labelStyle = { fontWeight: 'bold', marginBottom: '6px', display: 'block', color: '#333' };
-const inputStyle = { width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '12px' };
-const textareaStyle = { ...inputStyle, resize: 'vertical' };
-const selectStyle = { ...inputStyle };
-const itemRowStyle = { display: 'flex', alignItems: 'center', marginBottom: '10px', background: '#f1f1f1', padding: '8px', borderRadius: '6px' };
-const qtyInputStyle = { width: '60px', padding: '6px', marginLeft: '10px', borderRadius: '5px', border: '1px solid #ccc' };
-const cancelButtonStyle = { ...buttonStyle, backgroundColor: '#6c757d' };
 
 export default Orders;

@@ -45,19 +45,19 @@ function Login() {
   };
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.container}>
-        <h2 style={styles.heading}>Login</h2>
+    <div className="h-screen flex justify-center items-center bg-gradient-to-r from-pink-400 to-orange-300">
+      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Login</h2>
 
-        {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
+        {error && <div className="text-red-600 mb-3 font-medium">{error}</div>}
+        {success && <div className="text-green-600 mb-3 font-medium">{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <input
             type="email"
             name="email"
             placeholder="Email"
-            style={styles.input}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none"
             onChange={handleChange}
             required
           />
@@ -65,21 +65,32 @@ function Login() {
             type="password"
             name="password"
             placeholder="Password"
-            style={styles.input}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none"
             onChange={handleChange}
             required
           />
-          <button type="submit" style={styles.button}>Login</button>
+          <button
+            type="submit"
+            className="w-1/2 bg-pink-500 hover:bg-pink-600 text-white py-2 rounded-lg font-medium transition"
+          >
+            Login
+          </button>
         </form>
 
-        <p style={styles.linkText}>
-          Don't have an account?{" "}
-          <span onClick={() => navigate('/register')} style={styles.link}>
+        <p className="mt-4 text-sm text-gray-700">
+          Don't have an account?{' '}
+          <span
+            onClick={() => navigate('/register')}
+            className="text-pink-500 font-semibold cursor-pointer hover:underline"
+          >
             Register
           </span>
         </p>
-        <p style={styles.linkText}>
-          <span onClick={() => navigate('/forgot-password')} style={styles.link}>
+        <p className="mt-2 text-sm text-gray-700">
+          <span
+            onClick={() => navigate('/forgot-password')}
+            className="text-pink-500 font-semibold cursor-pointer hover:underline"
+          >
             Forgot Password?
           </span>
         </p>
@@ -87,71 +98,5 @@ function Login() {
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    height: "100vh",
-    background: "linear-gradient(to right, #ff758c, #ffb88c)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  container: {
-    backgroundColor: "#ffffff",
-    padding: "40px 30px",
-    borderRadius: "12px",
-    boxShadow: "0 0 15px rgba(0, 0, 0, 0.2)",
-    width: "100%",
-    maxWidth: "400px",
-    boxSizing: "border-box",
-    textAlign: "center",
-  },
-  heading: {
-    marginBottom: "25px",
-    fontSize: "26px",
-    color: "#333",
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    marginBottom: "15px",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    fontSize: "15px",
-    boxSizing: "border-box",
-    backgroundColor: "#f9f9f9",
-    outline: "none",
-  },
-  button: {
-    width: "50%",
-    padding: "12px",
-    backgroundColor: "#ff6b81",
-    color: "white",
-    border: "none",
-    fontSize: "16px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "background-color 0.3s ease",
-  },
-  linkText: {
-    textAlign: "center",
-    marginTop: "12px",
-    fontSize: "14px",
-    color: "#333",
-  },
-  link: {
-    color: "#ff6b81",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-  success: {
-    color: "green",
-    marginBottom: "15px",
-  },
-  error: {
-    color: "red",
-    marginBottom: "15px",
-  },
-};
 
 export default Login;

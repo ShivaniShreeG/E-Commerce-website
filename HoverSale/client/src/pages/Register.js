@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BASE_URL from "../api"; // ✅ Add this import
 
 function Register() {
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -12,7 +12,6 @@ function Register() {
     confirmPassword: "",
     address: "",
   });
-
   const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
@@ -33,7 +32,7 @@ function Register() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch(`${BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -55,91 +54,83 @@ function Register() {
     }
   };
 
-  const styles = {
-    wrapper: {
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-      background: "linear-gradient(to right, #ff758c, #ffb88c)",
-    },
-    container: {
-      backgroundColor: "white",
-      padding: "20px 40px",
-      borderRadius: "15px",
-      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-      width: "360px",
-      maxWidth: "90%",
-      textAlign: "center",
-    },
-    heading: {
-      marginTop: 0,
-      marginBottom: "20px",
-      color: "#333",
-      fontSize: "24px",
-    },
-    input: {
-      width: "80%",
-      padding: "10px 15px",
-      margin: "10px 0",
-      border: "1px solid #ccc",
-      borderRadius: "8px",
-      fontSize: "14px",
-      backgroundColor: "#f9f9f9",
-      outline: "none",
-    },
-    button: {
-      width: "50%",
-      padding: "12px",
-      backgroundColor: "#ff6b81",
-      color: "white",
-      border: "none",
-      borderRadius: "8px",
-      fontSize: "16px",
-      fontWeight: "bold",
-      cursor: "pointer",
-      marginTop: "10px",
-    },
-    messageBox: {
-      backgroundColor: "#fff",
-      color: "green",
-      padding: "4px",
-      marginBottom: "15px",
-      border: "1px solid #fff",
-      borderRadius: "4px",
-      textAlign: "center",
-      fontWeight: "bold",
-      fontSize:"14px",
-    },
-    loginLink: {
-      textAlign: "center",
-      marginTop: "15px",
-      fontSize: "14px",
-    },
-    loginSpan: {
-      cursor: "pointer",
-      color: "#ff5e73",
-      fontWeight: "bold",
-    },
-  };
-
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.container}>
-        <h2 style={styles.heading}>Register</h2>
-        {message && <div style={styles.messageBox}>{message}</div>}
-        <form onSubmit={handleSubmit}>
-          <input style={styles.input} type="text" name="username" placeholder="Username" onChange={handleChange} required />
-          <input style={styles.input} type="email" name="email" placeholder="Email" onChange={handleChange} required />
-          <input style={styles.input} type="text" name="phone" placeholder="Phone" onChange={handleChange} required />
-          <input style={styles.input} type="text" name="address" placeholder="Address" onChange={handleChange} required />
-          <input style={styles.input} type="password" name="password" placeholder="Password" onChange={handleChange} required />
-          <input style={styles.input} type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} required />
-          <button type="submit" style={styles.button}>Register</button>
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-pink-400 to-orange-300">
+      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-5">Register</h2>
+
+        {message && (
+          <div className="bg-green-100 text-green-700 px-4 py-2 mb-4 rounded font-semibold text-sm">
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <input
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            type="text"
+            name="username"
+            placeholder="Username"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            type="email"
+            name="email"
+            placeholder="Email"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            type="text"
+            name="phone"
+            placeholder="Phone"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            type="text"
+            name="address"
+            placeholder="Address"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            type="password"
+            name="password"
+            placeholder="Password"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            onChange={handleChange}
+            required
+          />
+
+          <button
+            type="submit"
+            className="bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 mt-2 rounded-md transition duration-300"
+          >
+            Register
+          </button>
         </form>
-        <p style={styles.loginLink}>
+
+        <p className="mt-4 text-sm text-gray-700">
           Already have an account?{" "}
-          <span onClick={() => navigate("/login")} style={styles.loginSpan}>Login</span>
+          <span
+            onClick={() => navigate("/login")}
+            className="text-pink-600 font-bold cursor-pointer hover:underline"
+          >
+            Login
+          </span>
         </p>
       </div>
     </div>

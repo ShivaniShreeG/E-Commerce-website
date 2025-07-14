@@ -24,11 +24,9 @@ const RazorpayPayment = () => {
 
   const triggerRazorpay = async () => {
     try {
-      // Step 1: Fetch Razorpay Key
       const keyRes = await fetch('http://localhost:5000/api/pay/razorpay-key');
       const keyData = await keyRes.json();
 
-      // Step 2: Create Razorpay Order
       const res = await fetch('http://localhost:5000/api/pay/razorpay-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,16 +34,14 @@ const RazorpayPayment = () => {
       });
       const data = await res.json();
 
-      // Step 3: Open Razorpay Checkout
       const options = {
-        key: keyData.key, // ✅ fetched from backend
+        key: keyData.key,
         amount: data.amount,
         currency: data.currency,
         name: 'HoverSale',
         description: `Order #${orderId}`,
         order_id: data.id,
         handler: async function (response) {
-          // Step 4: Verify Payment Signature
           const verifyRes = await fetch('http://localhost:5000/api/pay/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -87,22 +83,17 @@ const RazorpayPayment = () => {
   };
 
   return (
-    <div style={{ padding: '30px', textAlign: 'center' }}>
+    <div className="py-10 px-4 text-center min-h-screen bg-gray-50">
       {!paymentConfirmed ? (
-        <p>Processing payment via Razorpay...</p>
+        <p className="text-lg font-medium text-gray-600">Processing payment via Razorpay...</p>
       ) : (
-        <div style={{ marginTop: '30px' }}>
-          <h3 style={{ color: '#28a745' }}>✅ Payment Successful</h3>
-          <p><strong>Paid to HoverSale</strong></p>
-          <button onClick={() => navigate('/orders')} style={{
-            marginTop: '10px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}>
+        <div className="mt-10">
+          <h3 className="text-green-600 text-2xl font-semibold">✅ Payment Successful</h3>
+          <p className="text-gray-700 mt-2"><strong>Paid to HoverSale</strong></p>
+          <button
+            onClick={() => navigate('/orders')}
+            className="mt-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md transition duration-300"
+          >
             View Orders
           </button>
         </div>

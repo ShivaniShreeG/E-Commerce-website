@@ -31,7 +31,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ✅ API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/products', productRoutes);~
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/profile', profileRoutes);

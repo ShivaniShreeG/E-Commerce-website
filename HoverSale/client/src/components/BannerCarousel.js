@@ -14,7 +14,6 @@ const BannerCarousel = ({ topOffset = 70 }) => {
         return res.json();
       })
       .then(data => {
-        console.log('Banners received:', data);
         setBanners(data);
         setLoading(false);
       })
@@ -26,15 +25,23 @@ const BannerCarousel = ({ topOffset = 70 }) => {
   }, []);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', marginTop: topOffset }}>Loading banners...</div>;
+    return (
+      <div className={`text-center mt-[${topOffset}px] text-lg text-gray-600`}>
+        Loading banners...
+      </div>
+    );
   }
 
   if (error) {
-    return <div style={{ textAlign: 'center', marginTop: topOffset, color: 'red' }}>{error}</div>;
+    return (
+      <div className={`text-center mt-[${topOffset}px] text-red-600`}>
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div style={{ marginTop: `${topOffset}px` }}>
+    <div className={`mt-[${topOffset}px]`}>
       <Carousel
         autoPlay
         infiniteLoop
@@ -44,27 +51,15 @@ const BannerCarousel = ({ topOffset = 70 }) => {
         interval={3000}
         transitionTime={800}
       >
-        {banners.map(banner => (
+        {banners.map((banner) => (
           <div
             key={banner.id}
-            style={{
-              width: '100%',
-              height: '100%',
-              overflow: 'hidden',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#f4f4f4',
-            }}
+            className="w-full h-full flex justify-center items-center overflow-hidden bg-gray-100"
           >
             <img
-              src={banner.image_data} // 👈 use base64 image data
+              src={banner.image_data}
               alt={`Banner ${banner.id}`}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
+              className="w-full h-full object-cover"
             />
           </div>
         ))}

@@ -24,7 +24,6 @@ const PlaceOrder = () => {
   const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
   const [totalPrice, setTotalPrice] = useState(0);
 
-  // ✅ Fetch profile and saved addresses
   useEffect(() => {
     if (!userId) return;
 
@@ -42,7 +41,6 @@ const PlaceOrder = () => {
       .catch(err => console.error('Failed to fetch addresses', err));
   }, [userId]);
 
-  // ✅ Calculate total
   useEffect(() => {
     if (cartItems.length > 0) {
       const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -100,7 +98,6 @@ const PlaceOrder = () => {
         return;
       }
 
-      // ✅ Save new address if applicable
       if (showNewAddressInput && newAddress.trim()) {
         await fetch('http://localhost:5000/api/user-addresses', {
           method: 'POST',
@@ -125,7 +122,6 @@ const PlaceOrder = () => {
         return;
       }
 
-      // ✅ Remove items from cart if placed
       if (cartItems.length > 0) {
         const productIds = cartItems.map(item => item.product_id);
         await fetch('http://localhost:5000/api/cart/remove-items', {
@@ -221,7 +217,6 @@ const PlaceOrder = () => {
   );
 };
 
-// ✅ Styles (unchanged)
 const styles = {
   container: { padding: '40px 20px', backgroundColor: '#f9f3ec', minHeight: '100vh' },
   heading: { textAlign: 'center', marginBottom: '30px', color: '#333' },

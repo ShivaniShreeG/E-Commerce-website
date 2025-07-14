@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import BASE_URL from '../api';
 
 const UPIPayment = () => {
   const location = useLocation();
@@ -23,14 +24,14 @@ const UPIPayment = () => {
 
     const fetchUpi = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/pay/upi', {
+        const res = await fetch(`${BASE_URL}/api/pay/upi`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name,
             amount,
-            txnNote: `Order ${orderId}`
-          })
+            txnNote: `Order ${orderId}`,
+          }),
         });
 
         const data = await res.json();
@@ -66,82 +67,59 @@ const UPIPayment = () => {
   };
 
   return (
-    <div style={{ textAlign: 'center', padding: '40px' }}>
-      <h2>UPI Payment</h2>
-      <p>Scan this QR using your UPI app:</p>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-pink-400 to-orange-300 px-4 py-12">
+      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">UPI Payment</h2>
+        <p className="mb-6 text-gray-600">Scan this QR using your UPI app:</p>
 
-      {!paymentConfirmed && (
-  <div style={{ position: 'relative', width: '256px', margin: '0 auto' }}>
-    {upiUrl && (
-      <>
-        <QRCode
-          value={upiUrl}
-          size={256}
-          style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-          bgColor="#ffffff"
-          fgColor="#000000"
-          level="H"
-        />
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
-          padding: '4px',
-          borderRadius: '8px'
-        }}>
-          <img
-            src="/logo1.png"
-            alt="HoverSale"
-            style={{
-              width: '48px',
-              height: '48px',
-              objectFit: 'contain',
-              borderRadius: '6px'
-            }}
-          />
+        {!paymentConfirmed && upiUrl && (
+          <div className="relative mx-auto w-64 mb-6">
+            <QRCode
+              value={upiUrl}
+              size={256}
+              className="rounded-lg"
+              bgColor="#ffffff"
+              fgColor="#000000"
+              level="H"
+            />
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-1 rounded-md shadow-md">
+              <img
+                src="/logo1.png"
+                alt="HoverSale"
+                className="w-12 h-12 object-contain rounded"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="text-left text-sm text-gray-700 space-y-1 mb-6">
+          <p><strong>Amount:</strong> ₹{amount}</p>
+          <p><strong>Order ID:</strong> {orderId}</p>
+          <p><strong>Name:</strong> {name}</p>
+          <p><strong>Email:</strong> {email}</p>
+          <p><strong>Phone:</strong> {phone}</p>
         </div>
-      </>
-    )}
-  </div>
-)}
 
-      <p><strong>Amount:</strong> ₹{amount}</p>
-      <p><strong>Order ID:</strong> {orderId}</p>
-      <p><strong>Name:</strong> {name}</p>
-      <p><strong>Email:</strong> {email}</p>
-      <p><strong>Phone:</strong> {phone}</p>
-
-      {!paymentConfirmed ? (
-        <button onClick={handleConfirmPayment} style={{
-          padding: '10px 20px',
-          backgroundColor: '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          marginTop: '20px',
-          cursor: 'pointer'
-        }}>
-          I Have Paid
-        </button>
-      ) : (
-        <div style={{ marginTop: '30px' }}>
-          <h3 style={{ color: '#28a745' }}>✅ Payment Successful</h3>
-          <p><strong>Paid to HoverSale</strong></p>
-          <button onClick={() => navigate('/orders')} style={{
-            marginTop: '10px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}>
-            View Orders
+        {!paymentConfirmed ? (
+          <button
+            onClick={handleConfirmPayment}
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded transition duration-300"
+          >
+            I Have Paid
           </button>
-        </div>
-      )}
+        ) : (
+          <div className="mt-4 text-center">
+            <h3 className="text-green-600 text-xl font-bold">✅ Payment Successful</h3>
+            <p className="text-gray-700 mt-1">Paid to HoverSale</p>
+            <button
+              onClick={() => navigate('/orders')}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded transition duration-300"
+            >
+              View Orders
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

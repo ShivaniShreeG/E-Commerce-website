@@ -11,7 +11,6 @@ const Navbar = ({ onHeightChange }) => {
       onHeightChange(navbarRef.current.offsetHeight);
     }
 
-    // Check if user is logged in (based on userId or token in localStorage)
     const userId = localStorage.getItem('userId');
     setIsLoggedIn(!!userId);
   }, [onHeightChange]);
@@ -25,87 +24,46 @@ const Navbar = ({ onHeightChange }) => {
   return (
     <div
       ref={navbarRef}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 20px',
-        backgroundColor: '#2a5298',
-        color: '#fff',
-        position: 'fixed',
-        width: '100%',
-        top: 0,
-        zIndex: 1000,
-        boxSizing: 'border-box',
-      }}
+      className="fixed top-0 left-0 w-full bg-blue-800 text-white flex items-center justify-between px-6 py-3 shadow-md z-50"
     >
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Left - Logo and Brand */}
+      <div className="flex items-center gap-3">
         <img
           src="/logo1.png"
           alt="Logo"
-          style={{
-            width: '50px',
-            height: '50px',
-            borderRadius: '50%',
-            objectFit: 'cover',
-            marginRight: '10px',
-          }}
+          className="w-12 h-12 rounded-full object-cover"
         />
-        <h2 style={{
-          margin: 0,
-          fontSize: '1.8rem',
-          fontWeight: 'bold',
-          fontFamily: 'Segoe UI, Roboto, sans-serif',
-          color: '#ffffff',
-          letterSpacing: '1px',
-          textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-        }}>
-          HoverSale
-        </h2>
+        <h2 className="text-2xl font-bold tracking-wide drop-shadow-sm">HoverSale</h2>
       </div>
 
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-        gap: '15px',
-        maxWidth: '60%',
-      }}>
-        <Link to="/" style={linkStyle}>Home</Link>
-        {isLoggedIn && (
+      {/* Right - Navigation Links */}
+      <div className="flex items-center gap-5 flex-wrap justify-end">
+        <Link to="/" className="hover:underline">Home</Link>
+
+        {isLoggedIn ? (
           <>
-            <Link to="/wishlist" style={linkStyle}>Wishlist</Link>
-            <Link to="/orders" style={linkStyle}>Orders</Link>
-            <Link to="/cart" style={linkStyle}>Cart</Link>
-            <Link to="/profile" style={linkStyle}>Profile</Link>
-            <button onClick={handleLogout} style={logoutButtonStyle}>Logout</button>
+            <Link to="/wishlist" className="hover:underline">Wishlist</Link>
+            <Link to="/orders" className="hover:underline">Orders</Link>
+            <Link to="/cart" className="hover:underline">Cart</Link>
+            <Link to="/profile" className="hover:underline">Profile</Link>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded"
+            >
+              Logout
+            </button>
           </>
-        )}
-        {!isLoggedIn && (
-          <Link to="/login" style={{ ...linkStyle, background: 'green', padding: '6px 12px', borderRadius: '5px' }}>
+        ) : (
+          <Link
+            to="/login"
+            className="bg-green-600 hover:bg-green-700 px-4 py-1 rounded text-white"
+          >
             Login
           </Link>
         )}
       </div>
     </div>
   );
-};
-
-const linkStyle = {
-  color: 'white',
-  textDecoration: 'none',
-  whiteSpace: 'nowrap',
-};
-
-const logoutButtonStyle = {
-  background: 'red',
-  color: 'white',
-  border: 'none',
-  borderRadius: '5px',
-  padding: '5px 12px',
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
 };
 
 export default Navbar;

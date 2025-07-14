@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import BASE_URL from '../api';
 
 function ResetPassword() {
   const { token } = useParams();
@@ -12,7 +13,7 @@ function ResetPassword() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/reset-password/${token}`, {
+      const response = await fetch(`${BASE_URL}/api/auth/reset-password/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
@@ -34,62 +35,15 @@ function ResetPassword() {
     }
   };
 
-  const pageStyle = {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: 'linear-gradient(to right, #ff758c, #ffb88c)',
-    fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-  };
-
-  const boxStyle = {
-    backgroundColor: '#fff',
-    padding: '40px 30px',
-    borderRadius: '12px',
-    boxShadow: '0 0 15px rgba(0, 0, 0, 0.2)',
-    width: '100%',
-    maxWidth: '400px',
-    textAlign: 'center',
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '15px',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    fontSize: '15px',
-    boxSizing: 'border-box',
-  };
-
-  const buttonStyle = {
-    width: '50%',
-    padding: '12px',
-    backgroundColor: '#ff6b81',
-    color: 'white',
-    border: 'none',
-    fontSize: '16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-  };
-
-  const messageStyle = {
-    marginBottom: '15px',
-    fontWeight: 'bold',
-    color: message ? 'green' : 'red',
-  };
-
   return (
-    <div style={pageStyle}>
-      <div style={boxStyle}>
-        <h2>Set New Password</h2>
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-pink-400 to-orange-300 px-4">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Set New Password</h2>
 
-        {message && <div style={messageStyle}>{message}</div>}
-        {error && <div style={{ ...messageStyle, color: 'red' }}>{error}</div>}
+        {message && <div className="text-green-600 font-semibold mb-4">{message}</div>}
+        {error && <div className="text-red-600 font-semibold mb-4">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
             placeholder="Enter new password"
@@ -100,9 +54,14 @@ function ResetPassword() {
               setMessage('');
             }}
             required
-            style={inputStyle}
+            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
           />
-          <button type="submit" style={buttonStyle}>Reset Password</button>
+          <button
+            type="submit"
+            className="w-1/2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 rounded-md transition duration-300"
+          >
+            Reset Password
+          </button>
         </form>
       </div>
     </div>

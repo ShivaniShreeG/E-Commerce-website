@@ -49,7 +49,7 @@ const ProductsPage = () => {
     }
   }, [category, userId]);
 
-  const promptLogin = (callback) => {
+  const promptLogin = () => {
     Swal.fire({
       title: 'Login Required',
       text: 'You need to be logged in to perform this action.',
@@ -72,7 +72,7 @@ const ProductsPage = () => {
   };
 
   const handleAddToCart = (id) => {
-    if (!userId) return promptLogin(() => handleAddToCart(id));
+    if (!userId) return promptLogin();
 
     const inCart = cartItems.has(id);
     const method = inCart ? 'DELETE' : 'POST';
@@ -100,7 +100,7 @@ const ProductsPage = () => {
   };
 
   const handleAddToWishlist = (id) => {
-    if (!userId) return promptLogin(() => handleAddToWishlist(id));
+    if (!userId) return promptLogin();
 
     const inWishlist = wishlistItems.has(id);
     const method = inWishlist ? 'DELETE' : 'POST';
@@ -128,7 +128,7 @@ const ProductsPage = () => {
   };
 
   const handleBuyNow = (id, price) => {
-    if (!userId) return promptLogin(() => handleBuyNow(id, price));
+    if (!userId) return promptLogin();
 
     const quantity = quantities[id] || 1;
     Swal.fire({
@@ -144,188 +144,77 @@ const ProductsPage = () => {
     });
   };
 
-  if (loading) return <p style={{ padding: '20px' }}>Loading products...</p>;
-  if (products.length === 0) return <p style={{ padding: '20px' }}>No products found in this category.</p>;
+  if (loading) return <p className="p-5">Loading products...</p>;
+  if (products.length === 0) return <p className="p-5">No products found in this category.</p>;
 
   return (
     <>
       <Navbar />
-      <div style={styles.container}>
-        <h2 style={styles.title}>Products in "{category}"</h2>
-        <div style={styles.grid}>
+      <div className="pt-20 pb-10 bg-gradient-to-r from-pink-400 to-orange-300 min-h-screen">
+        <h2 className="text-center text-2xl font-semibold text-gray-800 mb-8">
+          Products in "{category}"
+        </h2>
+
+        <div className="flex flex-wrap justify-center gap-6 px-4">
           {products.map(product => (
-            <div key={product.id} style={styles.card} className="product-card">
+            <div
+              key={product.id}
+              className="bg-white w-64 p-4 rounded-xl shadow-md text-center transition-transform duration-300 transform hover:-translate-y-2 hover:shadow-xl"
+            >
               <img
                 src={`http://localhost:5000/${product.image_url}`}
                 alt={product.name}
-                style={styles.image}
+                className="w-full h-48 object-cover rounded-md mb-3"
               />
-              <h3 style={styles.productName}>{product.name}</h3>
-              <p style={styles.description}>{product.description}</p>
-              <p style={styles.price}>Price: ₹{product.price}</p>
+              <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
+              <p className="text-sm text-gray-600 mb-1">{product.description}</p>
+              <p className="text-red-600 font-bold text-base mb-2">₹{product.price}</p>
 
-              <div style={styles.iconRow}>
+              <div className="flex justify-center gap-5 mb-2">
                 <FaCartPlus
-                  style={styles.icon}
+                  className={`text-xl cursor-pointer ${cartItems.has(product.id) ? 'text-green-500' : 'text-gray-700'}`}
                   onClick={() => handleAddToCart(product.id)}
-                  color={cartItems.has(product.id) ? 'green' : 'black'}
                   title="Add to Cart"
                 />
                 <FaHeart
-                  style={styles.icon}
+                  className={`text-xl cursor-pointer ${wishlistItems.has(product.id) ? 'text-red-500' : 'text-gray-400'}`}
                   onClick={() => handleAddToWishlist(product.id)}
-                  color={wishlistItems.has(product.id) ? 'red' : 'gray'}
                   title="Add to Wishlist"
                 />
               </div>
 
-              <div style={styles.quantity}>
-                <button onClick={() => handleQuantityChange(product.id, -1, product.quantity)}>-</button>
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <button
+                  className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                  onClick={() => handleQuantityChange(product.id, -1, product.quantity)}
+                >
+                  -
+                </button>
                 <span>{quantities[product.id]}</span>
-                <button onClick={() => handleQuantityChange(product.id, 1, product.quantity)}>+</button>
+                <button
+                  className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                  onClick={() => handleQuantityChange(product.id, 1, product.quantity)}
+                >
+                  +
+                </button>
               </div>
 
               {product.quantity > 0 ? (
-                <button style={styles.buyBtn} onClick={() => handleBuyNow(product.id, product.price)}>
+                <button
+                  className="mt-2 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 font-semibold"
+                  onClick={() => handleBuyNow(product.id, product.price)}
+                >
                   Buy Now
                 </button>
               ) : (
-                <div style={{ color: 'red', marginTop: '10px' }}>Out of Stock</div>
+                <p className="text-red-600 mt-2 font-medium">Out of Stock</p>
               )}
             </div>
           ))}
         </div>
       </div>
-
-      <style>{`
-        .product-card {
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .product-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
-      `}</style>
     </>
   );
-};
-
-// (same `styles` object from previous code)
-
-
-const styles = {
-  container: {
-    paddingTop: '70px',
-    paddingBottom: '40px',
-    background: 'linear-gradient(to right, #ff758c, #ffb88c)',
-    minHeight: '100vh',
-  },
-  title: {
-    textAlign: 'center',
-    fontSize: '1.8rem',
-    marginBottom: '30px',
-    color: '#222',
-  },
-  grid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: '25px',
-    padding: '0 20px',
-  },
-  card: {
-    backgroundColor: '#fff',
-    width: '250px',
-    padding: '15px',
-    borderRadius: '10px',
-    boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
-    textAlign: 'center',
-  },
-  image: {
-    width: '100%',
-    height: '200px',
-    objectFit: 'cover',
-    borderRadius: '8px',
-    marginBottom: '10px',
-  },
-  productName: {
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    color: '#333',
-    margin: 0,
-  },
-  description: {
-    fontSize: '0.9rem',
-    color: '#666',
-    marginBottom: '6px',
-  },
-  price: {
-    color: 'crimson',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    marginBottom: '10px',
-  },
-  iconRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '15px',
-    marginBottom: '10px',
-  },
-  icon: {
-    fontSize: '1.2rem',
-    cursor: 'pointer',
-  },
-  quantity: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '10px',
-    alignItems: 'center',
-    marginBottom: '10px',
-  },
-  buyBtn: {
-    backgroundColor: '#007bff',
-    color: '#fff',
-    padding: '8px',
-    borderRadius: '6px',
-    border: 'none',
-    cursor: 'pointer',
-    width: '100%',
-    fontWeight: 'bold',
-  },
-  overlay: {
-    position: 'fixed',
-    top: 0, left: 0,
-    width: '100%', height: '100%',
-    background: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  promptBox: {
-    background: '#fff',
-    padding: '30px',
-    borderRadius: '10px',
-    textAlign: 'center',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-  },
-  loginBtn: {
-    backgroundColor: '#28a745',
-    color: '#fff',
-    padding: '10px 20px',
-    marginRight: '10px',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  cancelBtn: {
-    backgroundColor: '#dc3545',
-    color: '#fff',
-    padding: '10px 20px',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
 };
 
 export default ProductsPage;

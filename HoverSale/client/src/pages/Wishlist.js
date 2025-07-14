@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import Swal from 'sweetalert2';
+import BASE_URL from '../api';
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -9,7 +10,7 @@ const Wishlist = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/wishlist/${userId}`)
+    fetch(`${BASE_URL}/api/wishlist/${userId}`)
       .then(res => res.json())
       .then(data => setWishlist(data))
       .catch(err => {
@@ -23,22 +24,21 @@ const Wishlist = () => {
   }, [userId]);
 
   const handleBuyNow = (productId, price) => {
-  Swal.fire({
-    title: 'Proceed to Buy?',
-    text: 'Do you want to place an order for this item?',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, Buy Now',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#28a745',
-    cancelButtonColor: '#d33',
-  }).then((result) => {
-    if (result.isConfirmed) {
-      navigate(`/placeorder?productId=${productId}&price=${price}&quantity=1`);
-    }
-  });
-};
-
+    Swal.fire({
+      title: 'Proceed to Buy?',
+      text: 'Do you want to place an order for this item?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Buy Now',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate(`/placeorder?productId=${productId}&price=${price}&quantity=1`);
+      }
+    });
+  };
 
   const handleRemove = (productId) => {
     Swal.fire({
@@ -51,7 +51,7 @@ const Wishlist = () => {
       confirmButtonText: 'Yes, remove it!',
     }).then((result) => {
       if (result.isConfirmed) {
-        fetch(`http://localhost:5000/api/wishlist`, {
+        fetch(`${BASE_URL}/api/wishlist`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, productId }),
@@ -79,111 +79,37 @@ const Wishlist = () => {
     });
   };
 
-  const styles = {
-    body: {
-      margin: 0,
-      fontFamily: `'Segoe UI', Tahoma, Geneva, Verdana, sans-serif`,
-      background: 'linear-gradient(to right, #ff9a9e, #fad0c4)',
-      minHeight: '100vh',
-    },
-    container: {
-      padding: '40px 20px',
-      textAlign: 'center',
-    },
-    title: {
-      fontSize: '2.5rem',
-      color: '#333',
-      marginBottom: '30px',
-      fontWeight: 'bold',
-    },
-    grid: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '24px',
-      justifyContent: 'center',
-      padding: '2rem',
-    },
-    card: {
-      backgroundColor: '#fff',
-      borderRadius: '20px',
-      padding: '20px',
-      width: '100%',
-      maxWidth: '300px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    },
-    image: {
-      width: '100%',
-      height: '200px',
-      objectFit: 'cover',
-      borderRadius: '12px',
-      marginBottom: '15px',
-    },
-    name: {
-      fontSize: '1.3rem',
-      fontWeight: 'bold',
-      color: '#000',
-      margin: '10px 0 5px',
-    },
-    description: {
-      fontSize: '0.95rem',
-      color: '#555',
-      marginBottom: '10px',
-    },
-    price: {
-      fontSize: '0.95rem',
-      color: '#000',
-      fontWeight: 'bold',
-      marginBottom: '10px',
-    },
-    actions: {
-      display: 'flex',
-      justifyContent: 'space-around',
-      marginTop: '15px',
-    },
-    button: {
-      backgroundColor: '#ff66b2',
-      border: 'none',
-      borderRadius: '8px',
-      padding: '8px 14px',
-      color: 'white',
-      fontWeight: 'bold',
-      cursor: 'pointer',
-      transition: 'background-color 0.3s ease',
-    },
-  };
-
   return (
-    <div style={styles.body}>
+    <div className="min-h-screen bg-gradient-to-r from-pink-300 to-rose-200">
       <Navbar />
-      <div style={styles.container}>
-        <h2 style={styles.title}>Your Wishlist</h2>
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Your Wishlist</h2>
+
         {wishlist.length === 0 ? (
-          <p>Your wishlist is empty.</p>
+          <p className="text-center text-gray-600 text-lg">Your wishlist is empty.</p>
         ) : (
-          <div style={styles.grid}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {wishlist.map(item => (
-              <div key={item.id} style={styles.card}>
+              <div key={item.id} className="bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center">
                 <img
-                  src={`http://localhost:5000/${item.image_url}`}
+                  src={`${BASE_URL}/${item.image_url}`}
                   alt={item.name}
-                  style={styles.image}
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/150";
-                  }}
+                  onError={(e) => { e.target.src = "https://via.placeholder.com/150"; }}
+                  className="w-full h-52 object-cover rounded-xl mb-4"
                 />
-                <h3 style={styles.name}>{item.name}</h3>
-                <p style={styles.description}>{item.description}</p>
-                <p style={styles.price}>₹{item.price}</p>
-                <div style={styles.actions}>
+                <h3 className="text-lg font-semibold text-gray-800 mb-1">{item.name}</h3>
+                <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                <p className="text-base font-bold text-gray-800 mb-4">₹{item.price}</p>
+                <div className="flex gap-4">
                   <button
-                    style={styles.button}
                     onClick={() => handleBuyNow(item.id, item.price)}
+                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition"
                   >
                     Buy Now
                   </button>
                   <button
-                    style={styles.button}
                     onClick={() => handleRemove(item.id)}
+                    className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg transition"
                   >
                     Remove
                   </button>
