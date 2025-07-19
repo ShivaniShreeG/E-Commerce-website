@@ -10,6 +10,8 @@ router.get('/', (req, res) => {
       console.error('Error fetching categories:', err);
       return res.status(500).json({ error: 'Server error' });
     }
+
+    // URLs already full, no need to modify
     res.json(results);
   });
 });

@@ -2,6 +2,18 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // adjust if your DB config is elsewhere
 
+// Route: Get all products
+router.get('/', (req, res) => {
+  db.query('SELECT * FROM products', (err, results) => {
+    if (err) {
+      console.error('Error fetching all products:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json(results);
+  });
+});
+
 // Route: Get products by category name (case-insensitive)
 router.get('/:category', (req, res) => {
   const categoryName = req.params.category;

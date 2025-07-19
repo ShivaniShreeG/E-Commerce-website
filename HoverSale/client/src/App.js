@@ -11,19 +11,39 @@ import Wishlist from './pages/Wishlist';
 import PlaceOrder from './pages/PlaceOrder';
 import Orders from './pages/Orders';
 import Navbar from './components/Navbar';
-
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
-import UPIPayment from './pages/UPIPayment';
 import RazorpayPayment from './pages/RazorpayPayment';
-
+import TrackingPage from './pages/TrackingPage'; 
+// ✅ Admin Pages
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminCategories from './pages/AdminCategories';
+import AdminProducts from './pages/AdminProducts';
+import AdminOrders from './pages/AdminOrders';
+import AdminAssetsPage from './pages/AdminAssetsPage';
 function AppWrapper() {
   const location = useLocation();
   const [navbarHeight, setNavbarHeight] = useState(0);
 
-  const noNavbarRoutes = ['/', '/register', '/forgot-password'];
-  const isResetPasswordRoute = location.pathname.startsWith('/reset-password');
-  const hideNavbar = noNavbarRoutes.includes(location.pathname) || isResetPasswordRoute;
+  const hideNavbar = (() => {
+    const path = location.pathname;
+
+    // ❌ Hide for user auth and reset-password
+    if (
+      path === '/register' ||
+      path === '/forgot-password' ||
+      path.startsWith('/reset-password')
+    ) {
+      return true;
+    }
+
+    // ❌ Hide for all admin routes
+    if (path.startsWith('/admin')) return true;
+
+    return false;
+  })();
 
   const userId = localStorage.getItem('userId');
 
@@ -32,19 +52,29 @@ function AppWrapper() {
       {!hideNavbar && <Navbar onHeightChange={setNavbarHeight} />}
       <div style={{ marginTop: hideNavbar ? 0 : `${navbarHeight}px` }}>
         <Routes>
+          {/* ✅ User Routes */}
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/" element={<Home />} />
           <Route path="/products/:category" element={<Products />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/profile" element={<Profile userId={userId} />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/upi-payment" element={<UPIPayment />} />
           <Route path="/razorpay-payment" element={<RazorpayPayment />} />
+          <Route path="/track-order/:trackingId" element={<TrackingPage />} />
+          {/* ✅ Admin Routes */}
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin-users" element={<AdminUsers />} />
+          <Route path="/admin-categories" element={<AdminCategories />} />
+          <Route path="/admin-products" element={<AdminProducts />} />
+          <Route path="/admin-orders" element={<AdminOrders />} />
+          <Route path="/admin-assets" element={<AdminAssetsPage />} />
+
         </Routes>
       </div>
     </>

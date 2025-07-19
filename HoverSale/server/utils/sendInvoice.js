@@ -1,7 +1,5 @@
 const nodemailer = require('nodemailer');
 const db = require('../db');
-const fs = require('fs');
-const path = require('path');
 const generateInvoicePDF = require('./generateInvoice');
 
 const sendInvoice = async (orderId, userId, status) => {
@@ -30,13 +28,10 @@ const sendInvoice = async (orderId, userId, status) => {
 
     const { name, email, address, phone, payment_method } = products[0];
 
-    // Calculate total and rows
     let grandTotal = 0;
-
     const productRows = products.map(p => {
       const total = p.unit_price * p.quantity;
       grandTotal += total;
-
       return `
         <tr>
           <td>${p.product_name}</td>
@@ -46,6 +41,16 @@ const sendInvoice = async (orderId, userId, status) => {
       `;
     }).join('');
 
+    // ✅ Fetch latest logo image from Cloudinary via logos table
+    const logoUrl = await new Promise((resolve, reject) => {
+      db.query(`SELECT image_url FROM logos ORDER BY id DESC LIMIT 1`, (err, result) => {
+        if (err) reject(err);
+        else if (!result.length) resolve('');
+        else resolve(result[0].image_url);
+      });
+    });
+
+    // ✅ Generate PDF invoice
     const pdfPath = await generateInvoicePDF({
       orderId,
       name,
@@ -62,6 +67,7 @@ const sendInvoice = async (orderId, userId, status) => {
       grand_total: grandTotal
     });
 
+    // ✅ Configure transporter
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -70,13 +76,14 @@ const sendInvoice = async (orderId, userId, status) => {
       },
     });
 
+    // ✅ Compose email with Cloudinary-hosted logo
     const mailOptions = {
       from: `"HoverSale" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: `Your Order [${orderId}] is ${status}`,
       html: `
-        <div style="text-align:center;">
-          <img src="cid:logo" alt="HoverSale Logo" style="max-width: 150px;" />
+        <div style="text-align:center; margin-bottom: 10px;">
+          <img src="${logoUrl}" alt="HoverSale Logo" style="max-width: 160px; margin: auto;" />
         </div>
         <h2>HoverSale Invoice</h2>
         <p><strong>Status:</strong> ${status}</p>
@@ -104,17 +111,11 @@ const sendInvoice = async (orderId, userId, status) => {
           filename: `Invoice-${orderId}.pdf`,
           path: pdfPath,
           contentType: 'application/pdf'
-        },
-        {
-          filename: 'logo.png',
-          path: path.join(__dirname, '../assets/logo1.png'),
-          cid: 'logo'
         }
       ]
     };
 
     await transporter.sendMail(mailOptions);
-
     return { success: true };
   } catch (err) {
     console.error('Email send error:', err);

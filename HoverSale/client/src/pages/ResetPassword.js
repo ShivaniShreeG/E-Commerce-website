@@ -24,7 +24,7 @@ function ResetPassword() {
       if (response.ok) {
         setMessage('Password reset successful');
         setError('');
-        setTimeout(() => navigate('/'), 3000);
+        setTimeout(() => navigate('/login'), 2000);
       } else {
         setError(result.error || 'Reset failed');
         setMessage('');
@@ -36,12 +36,12 @@ function ResetPassword() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-pink-400 to-orange-300 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+    <div className="min-h-screen flex justify-center items-center bg-sky-100 px-4">
+      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Set New Password</h2>
 
-        {message && <div className="text-green-600 font-semibold mb-4">{message}</div>}
-        {error && <div className="text-red-600 font-semibold mb-4">{error}</div>}
+        {message && <div className="text-green-600 mb-4 font-medium text-sm">{message}</div>}
+        {error && <div className="text-red-600 mb-4 font-medium text-sm">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -54,11 +54,11 @@ function ResetPassword() {
               setMessage('');
             }}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+            className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-400"
           />
           <button
             type="submit"
-            className="w-1/2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 rounded-md transition duration-300"
+            className="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-lg font-semibold transition duration-200"
           >
             Reset Password
           </button>

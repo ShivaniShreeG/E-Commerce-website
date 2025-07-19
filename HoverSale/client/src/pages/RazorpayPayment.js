@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import BASE_URL from '../api';
 
 const RazorpayPayment = () => {
   const location = useLocation();
@@ -24,10 +25,10 @@ const RazorpayPayment = () => {
 
   const triggerRazorpay = async () => {
     try {
-      const keyRes = await fetch('http://localhost:5000/api/pay/razorpay-key');
+      const keyRes = await fetch(`${BASE_URL}/api/payment/razorpay-key`);
       const keyData = await keyRes.json();
 
-      const res = await fetch('http://localhost:5000/api/pay/razorpay-order', {
+      const res = await fetch(`${BASE_URL}/api/payment/razorpay-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
@@ -42,7 +43,7 @@ const RazorpayPayment = () => {
         description: `Order #${orderId}`,
         order_id: data.id,
         handler: async function (response) {
-          const verifyRes = await fetch('http://localhost:5000/api/pay/verify-payment', {
+          const verifyRes = await fetch(`${BASE_URL}/api/payment/verify-payment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -56,12 +57,10 @@ const RazorpayPayment = () => {
 
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
-            Swal.fire({
-              icon: 'success',
-              title: 'Payment Verified',
-              text: `Razorpay ID: ${response.razorpay_payment_id}`,
-            });
             setPaymentConfirmed(true);
+            setTimeout(() => {
+              navigate('/orders');
+            }, 3000);
           } else {
             Swal.fire({
               icon: 'error',
@@ -70,32 +69,42 @@ const RazorpayPayment = () => {
             }).then(() => navigate('/orders'));
           }
         },
-        prefill: { name, email, contact: phone },
-        theme: { color: '#3399cc' },
+        prefill: {
+          name,
+          email,
+          contact: phone,
+        },
+        theme: {
+          color: '#0ea5e9', // Tailwind blue-500
+        },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
       console.error(err);
-      Swal.fire({ icon: 'error', title: 'Razorpay Error', text: 'Failed to initiate Razorpay payment.' });
+      Swal.fire({
+        icon: 'error',
+        title: 'Razorpay Error',
+        text: 'Failed to initiate Razorpay payment.',
+      }).then(() => navigate('/orders'));
     }
   };
 
   return (
-    <div className="py-10 px-4 text-center min-h-screen bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
       {!paymentConfirmed ? (
-        <p className="text-lg font-medium text-gray-600">Processing payment via Razorpay...</p>
+        <div className="text-center">
+          <p className="text-xl font-semibold text-blue-600 animate-pulse">
+            💳 Processing your payment via Razorpay...
+          </p>
+          <p className="text-sm text-gray-500 mt-2">Please do not refresh or close this tab.</p>
+        </div>
       ) : (
-        <div className="mt-10">
-          <h3 className="text-green-600 text-2xl font-semibold">✅ Payment Successful</h3>
-          <p className="text-gray-700 mt-2"><strong>Paid to HoverSale</strong></p>
-          <button
-            onClick={() => navigate('/orders')}
-            className="mt-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md transition duration-300"
-          >
-            View Orders
-          </button>
+        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg text-center max-w-sm w-full">
+          <h2 className="text-green-600 text-3xl font-bold mb-2">✅ Payment Successful</h2>
+          <p className="text-gray-800 font-medium">Your order has been placed!</p>
+          <p className="text-gray-500 text-sm mt-2">Redirecting to your orders page...</p>
         </div>
       )}
     </div>

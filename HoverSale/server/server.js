@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-require('dotenv').config(); // Load .env variables early
+require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const categoriesRoutes = require('./routes/categories');
@@ -14,38 +14,48 @@ const cartRoutes = require('./routes/cart');
 const payRoutes = require('./routes/payment');
 const addressRoutes = require('./routes/address');
 const bannerRoutes = require('./routes/banners');
-
+const adminAuthRoutes = require('./routes/adminAuth');
+const adminCategoriesRoutes = require('./routes/adminCategories');
+const adminProductRoutes = require('./routes/adminProducts'); // ✅ add if not already
+const adminDashboardRoutes = require('./routes/adminDashboard');
+const adminOrdersRoutes = require('./routes/adminOrders');
+const uploadRoutes = require('./routes/upload');
+const logoRoute = require('./routes/logo');
 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // or restrict to your frontend domain
+  credentials: true
+}));
 app.use(bodyParser.json());
 
-// ✅ Serve static files
-app.use('/images', express.static(path.join(__dirname, 'images')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ API Routes
+// ✅ All Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
-app.use('/api/products', productRoutes);~
+app.use('/api/products', productRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/cart', cartRoutes);
-app.use('/api/pay', payRoutes);
-app.use('/api/user-addresses', addressRoutes);  // this matches your fetch path
+app.use('/api/payment', payRoutes);
+app.use('/api/user-addresses', addressRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/api/admin', adminAuthRoutes);
+app.use('/api/admin/categories', adminCategoriesRoutes);
+app.use('/api/admin/products', adminProductRoutes); // ✅
+app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/orders', adminOrdersRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/logos', logoRoute);
 
-// ✅ Health check root route
 app.get('/', (req, res) => {
   res.send('✅ Backend API Running');
 });
 
-// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

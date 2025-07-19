@@ -1,231 +1,176 @@
 import React, { useEffect, useState } from 'react';
-import { FaFileInvoice, FaRedo, FaTimes, FaEnvelope } from 'react-icons/fa';
+import {
+  FaFileInvoice, FaRedo, FaTimes, FaEnvelope,
+  FaTruck, FaCalendarAlt, FaMapMarkerAlt, FaHashtag,
+  FaRoute, FaCreditCard
+} from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import BASE_URL from '../api';
 
 function Orders() {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  const [, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 5;
   const userId = localStorage.getItem('userId');
-  const [reorderData, setReorderData] = useState(null);
-  const [showReorderForm, setShowReorderForm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/order/user/${userId}`)
+    fetch(`${BASE_URL}/api/order/user/${userId}`)
       .then(res => res.json())
       .then(data => {
-        const sortedOrders = (data.orders || []).sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
-        setOrders(sortedOrders);
-        setLoading(false);
+        const sorted = (data.orders || []).sort((a, b) =>
+          new Date(b.order_date) - new Date(a.order_date)
+        );
+        setOrders(sorted);
       })
-      .catch(err => {
-        console.error('Error fetching orders:', err);
-        setLoading(false);
-      });
+      .catch(err => console.error('Fetch error:', err));
   }, [userId]);
 
   useEffect(() => {
-    setFilteredOrders(filter === 'All' ? orders : orders.filter(o => o.status === filter));
+    setFilteredOrders(
+      filter === 'All' ? orders : orders.filter(o => o.status === filter)
+    );
     setCurrentPage(1);
   }, [filter, orders]);
 
+
+
   const cancelOrder = async (orderId) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'Do you want to cancel this order?',
+    const confirm = await Swal.fire({
+      title: 'Cancel this order?',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, cancel it!',
-      cancelButtonText: 'No',
+      confirmButtonText: 'Yes',
     });
-
-    if (!result.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/order/${orderId}/cancel`, { method: 'PATCH' });
+      const res = await fetch(`${BASE_URL}/api/order/${orderId}/cancel`, {
+        method: 'PATCH'
+      });
       const data = await res.json();
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Canceled' } : o));
-        Swal.fire('Canceled!', data.message || 'Order has been canceled.', 'success');
+        setOrders(prev =>
+          prev.map(o => o.id === orderId ? { ...o, status: 'Canceled' } : o)
+        );
+        Swal.fire('Canceled', data.message || 'Order canceled.', 'success');
       } else {
-        Swal.fire('Error', data.error || data.message, 'error');
+        Swal.fire('Error', data.error || 'Failed to cancel.', 'error');
       }
-    } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'Something went wrong while cancelling the order.', 'error');
+    } catch {
+      Swal.fire('Error', 'Could not connect.', 'error');
     }
   };
 
-  const reorder = (orderId) => {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return Swal.fire('Error', 'Order not found.', 'error');
-    const selectedItems = order.items.map(item => ({
-      ...item,
-      selected: true,
-      newQuantity: item.quantity
+  const reorder = (order) => {
+    const allInStock = order.items.every(item => item.stock === undefined || item.stock > 0);
+    if (!allInStock) {
+      Swal.fire(
+        'Some items are out of stock',
+        'Please remove unavailable items from cart manually.',
+        'warning'
+      );
+      return;
+    }
+
+    const reorderItems = order.items.map(item => ({
+      product_id: item.product_id,
+      productName: item.product_name,
+      productImage: item.product_image,
+      price: item.price,
+      quantity: item.quantity,
+      stock: item.stock || 1,
     }));
-    setReorderData({
-      orderId: order.id,
-      name: order.name,
-      email: order.email,
-      phone: order.phone,
-      address: order.address,
-      payment_method: 'Cash on Delivery',
-      items: selectedItems
+
+    navigate('/placeorder', {
+      state: {
+        fromReorder: true,
+        user_id: userId,
+        name: order.name,
+        email: order.email,
+        phone: order.phone,
+        address: order.address,
+        payment_method: 'Cash on Delivery',
+        items: reorderItems,
+        total_price: order.total_price,
+      }
     });
-    setShowReorderForm(true);
   };
 
-  const submitReorder = async () => {
-    const { name, email, phone, address, payment_method, items } = reorderData;
-
-    const filteredItems = items
-      .filter(i => i.selected !== false)
-      .map(i => ({
-        product_id: i.product_id,
-        quantity: parseInt(i.newQuantity),
-        price: i.price
-      }));
-
-    if (filteredItems.length === 0)
-      return Swal.fire('Warning', 'Please select at least one item.', 'warning');
-
-    const totalPrice = filteredItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-
-    try {
-      const res = await fetch(`http://localhost:5000/api/order/reorder-custom`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          name,
-          email,
-          phone,
-          address,
-          payment_method,
-          total_price: totalPrice,
-          items: filteredItems
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.error)
-        return Swal.fire('Error', data.error || 'Reorder failed', 'error');
-
-      setShowReorderForm(false);
-      Swal.fire('Success', data.message || 'Reorder placed successfully.', 'success');
-
-      if (payment_method === 'UPI' || payment_method === 'Credit Card') {
-        setTimeout(() => {
-          navigate('/razorpay-payment', {
-            state: {
-              amount: totalPrice,
-              orderId: data.orderId,
-              name,
-              email,
-              phone,
-            }
-          });
-        }, 1500);
+  const handlePayNow = (order) => {
+    navigate('/razorpay-payment', {
+      state: {
+        amount: order.total_price,
+        orderId: order.id,
+        name: order.name,
+        email: order.email,
+        phone: order.phone
       }
-    } catch (err) {
-      console.error('Reorder failed:', err);
-      Swal.fire('Error', 'Something went wrong during reorder.', 'error');
-    }
+    });
   };
 
   const sendInvoiceEmail = async (orderId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/order/email-invoice`, {
+      const res = await fetch(`${BASE_URL}/api/order/email-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, userId })
+        body: JSON.stringify({ orderId, userId }),
       });
       const data = await res.json();
-      if (res.ok) {
-        Swal.fire('Success', data.message || 'Invoice sent to email.', 'success');
-      } else {
-        Swal.fire('Error', data.error || 'Failed to send invoice.', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'Something went wrong.', 'error');
+      res.ok
+        ? Swal.fire('Success', data.message || 'Invoice sent.', 'success')
+        : Swal.fire('Error', data.error || 'Failed to send.', 'error');
+    } catch {
+      Swal.fire('Error', 'Network issue.', 'error');
     }
   };
 
-  const toBase64 = (url) => fetch(url).then(res => res.blob()).then(blob => new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  }));
+  const toBase64 = (url) =>
+    fetch(url)
+      .then(res => res.blob())
+      .then(blob => new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      }));
 
   const generateInvoicePDF = async (doc, order, margin, logoBase64) => {
     let y = margin;
     if (logoBase64) doc.addImage(logoBase64, 'PNG', margin, y, 30, 15);
-    doc.setFontSize(16);
-    doc.text('HoverSale - Invoice', 200 - margin, y + 10, { align: 'right' });
+    doc.setFontSize(16).text('HoverSale - Invoice', 200 - margin, y + 10, { align: 'right' });
     y += 25;
-    doc.setDrawColor(200);
     doc.line(margin, y, 190, y);
     y += 10;
-    doc.setFontSize(11);
-    doc.setTextColor(50);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Order ID: ${order.id}`, margin, y);
-    y += 6;
-    doc.text(`Date: ${new Date(order.order_date).toLocaleString()}`, margin, y);
-    y += 6;
-    doc.text(`Status: ${order.status}`, margin, y);
-    y += 6;
-    doc.text('Delivery Address:', margin, y);
-    y += 6;
-    const addressLines = doc.splitTextToSize(order.address, 160);
-    doc.text(addressLines, margin + 5, y);
-    y += addressLines.length * 6 + 6;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(230);
+    doc.setFontSize(11).setTextColor(50).setFont('helvetica', 'normal');
+    doc.text(`Order ID: ${order.id}`, margin, y); y += 6;
+    doc.text(`Date: ${new Date(order.order_date).toLocaleString()}`, margin, y); y += 6;
+    doc.text(`Status: ${order.status}`, margin, y); y += 6;
+    doc.text('Delivery Address:', margin, y); y += 6;
+    doc.text(doc.splitTextToSize(order.address, 160), margin + 5, y); y += 30;
+    doc.setFontSize(12).setFont('helvetica', 'bold').setFillColor(230);
     doc.rect(margin, y, 170, 10, 'F');
     doc.setTextColor(0);
     doc.text('Product', margin + 2, y + 7);
     doc.text('Qty', margin + 85, y + 7);
-    doc.text('Price (Rs.)', margin + 115, y + 7);
-    doc.text('Total (Rs.)', margin + 150, y + 7);
+    doc.text('Price', margin + 115, y + 7);
+    doc.text('Total', margin + 150, y + 7);
     y += 12;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setDrawColor(220);
-    if (Array.isArray(order.items)) {
-      order.items.forEach((item) => {
-        const total = item.quantity * item.price;
-        doc.text(item.product_name, margin + 2, y);
-        doc.text(`${item.quantity}`, margin + 85, y);
-        doc.text(`Rs. ${item.price.toFixed(2)}`, margin + 115, y);
-        doc.text(`Rs. ${total.toFixed(2)}`, margin + 150, y);
-        doc.line(margin, y + 2, 190, y + 2);
-        y += 8;
-      });
-    } else {
-      doc.text('No items available.', margin, y);
-      y += 10;
-    }
+    doc.setFontSize(11).setFont('helvetica', 'normal');
+    order.items?.forEach(i => {
+      doc.text(i.product_name, margin + 2, y);
+      doc.text(`${i.quantity}`, margin + 85, y);
+      doc.text(`₹${i.price.toFixed(2)}`, margin + 115, y);
+      doc.text(`₹${(i.quantity * i.price).toFixed(2)}`, margin + 150, y);
+      y += 8;
+    });
     y += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setDrawColor(200);
     doc.line(margin, y, 190, y);
     y += 10;
-    doc.text(`Total Price: Rs. ${order.total_price.toFixed(2)}`, margin + 130, y);
-    y += 20;
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text('Thank you for shopping with HoverSale!', margin, y);
-    doc.text('For help, contact hoversale521@gmail.com', margin, y + 6);
+    doc.setFont('helvetica', 'bold').text(`Total: ₹${order.total_price.toFixed(2)}`, margin + 130, y);
   };
 
   const downloadInvoice = async (order) => {
@@ -241,93 +186,92 @@ function Orders() {
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-pink-400 to-orange-300 py-10">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">My Orders</h2>
+    <div className="min-h-screen bg-sky-100 py-10 px-4">
+      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">📦 My Orders</h2>
 
-        <div className="flex justify-center mb-6 flex-wrap gap-2">
-          {['All', 'Pending', 'Shipped', 'Delivered', 'Canceled'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-md font-medium ${
-                filter === status ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-800'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {['All', 'Pending', 'Packed', 'Shipped', 'Delivered', 'Canceled'].map(status => (
+  <button key={status} onClick={() => setFilter(status)}
+    className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+      filter === status ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'
+    }`}>
+    {status}
+  </button>
+))}
         </div>
 
         {currentOrders.map((order) => (
-          <div key={order.id} className="bg-gray-100 rounded-lg shadow-sm p-4 mb-6">
-            <p><strong>Order ID:</strong> {order.id}</p>
-            <p><strong>Date:</strong> {new Date(order.order_date).toLocaleString()}</p>
-            <p><strong>Status:</strong> {order.status}</p>
-            <p><strong>Delivery Address:</strong> {order.address}</p>
+  <div key={order.id} className="bg-gray-100 relative rounded-lg p-4 mb-6 shadow-sm">
+    {/* Top-right status + estimated delivery */}
+    <div className="absolute top-3 right-3 text-right space-y-1">
+      <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold
+        ${order.status === 'Delivered' ? 'bg-green-100 text-green-700'
+          : order.status === 'Shipped' ? 'bg-blue-100 text-blue-700'
+          : order.status === 'Canceled' ? 'bg-gray-200 text-gray-700'
+          : 'bg-yellow-100 text-yellow-700'}`}>
+        {order.status === 'Pending' ? 'Placed' : order.status}
+      </div>
 
-            {Array.isArray(order.items) && (
-              <div className="mt-4 grid gap-3">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-4 bg-white rounded-md p-3 shadow">
-                    <img src={`http://localhost:5000/${item.product_image}`} alt={item.product_name} className="w-20 h-20 object-cover rounded" />
-                    <div>
-                      <p className="font-semibold">{item.product_name}</p>
-                      <p>Qty: {item.quantity}</p>
-                      <p>Price: ₹{item.price}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {order.estimated_delivery && (
+        <div className="text-xs text-gray-600">
+          📅 Est. Delivery: {new Date(order.estimated_delivery).toLocaleDateString()}
+        </div>
+      )}
+    </div>
 
-            <p className="font-bold mt-4">Total: ₹{order.total_price}</p>
+    {/* Order Info */}
+    <p><FaHashtag className="inline mr-1" /> <strong>Order ID:</strong> {order.id}</p>
+    <p><FaCalendarAlt className="inline mr-1" /> <strong>Date:</strong> {new Date(order.order_date).toLocaleString()}</p>
+    <p><FaTruck className="inline mr-1" /> <strong>Status:</strong> {order.status}</p>
+    <p><FaCreditCard className="inline mr-1" /> <strong>Payment:</strong> {order.payment_status || 'Unpaid'}</p>
+    <p><FaMapMarkerAlt className="inline mr-1" /> <strong>Address:</strong> {order.address}</p>
+    <p><FaRoute className="inline mr-1" /> <strong>Tracking ID:</strong> {order.tracking_id || 'Pending'}</p>
 
-            <div className="flex flex-wrap gap-3 mt-4">
-              <button onClick={() => downloadInvoice(order)} className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center gap-2"><FaFileInvoice /> Invoice</button>
-              <button onClick={() => sendInvoiceEmail(order.id)} className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded flex items-center gap-2"><FaEnvelope /> Email</button>
-              {order.status !== 'Canceled' && (
-                <button onClick={() => cancelOrder(order.id)} className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center gap-2"><FaTimes /> Cancel</button>
-              )}
-              {order.status === 'Canceled' && (
-                <button onClick={() => reorder(order.id)} className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded flex items-center gap-2"><FaRedo /> Reorder</button>
-              )}
-            </div>
-          </div>
-        ))}
+    {/* Items */}
+    {order.items?.map((item, i) => (
+      <div key={i} className="flex gap-4 bg-white rounded p-3 mt-3 shadow-sm">
+        <img src={`${item.product_image}`} alt={item.product_name} className="w-20 h-20 object-cover rounded" />
+        <div>
+          <p className="font-semibold">{item.product_name}</p>
+          <p>Qty: {item.quantity}</p>
+          <p>Price: ₹{item.price}</p>
+        </div>
+      </div>
+    ))}
 
-        {showReorderForm && reorderData && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg overflow-y-auto max-h-[90vh]">
-              <h3 className="text-xl font-semibold mb-4 text-center">Reorder Details</h3>
-              <input type="text" className="w-full mb-2 p-2 border rounded" value={reorderData.name} onChange={e => setReorderData({ ...reorderData, name: e.target.value })} placeholder="Name" />
-              <input type="email" className="w-full mb-2 p-2 border rounded" value={reorderData.email} onChange={e => setReorderData({ ...reorderData, email: e.target.value })} placeholder="Email" />
-              <input type="tel" className="w-full mb-2 p-2 border rounded" value={reorderData.phone} onChange={e => setReorderData({ ...reorderData, phone: e.target.value })} placeholder="Phone" />
-              <textarea className="w-full mb-2 p-2 border rounded" value={reorderData.address} onChange={e => setReorderData({ ...reorderData, address: e.target.value })} placeholder="Address" />
-              <select className="w-full mb-4 p-2 border rounded" value={reorderData.payment_method} onChange={e => setReorderData({ ...reorderData, payment_method: e.target.value })}>
-                <option value="Cash on Delivery">Cash on Delivery</option>
-                <option value="UPI">UPI</option>
-                <option value="Credit Card">Credit Card</option>
-              </select>
-              <div className="mb-4">
-                {reorderData.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center mb-2">
-                    <div>{item.product_name}</div>
-                    <input type="number" className="w-16 border p-1 rounded" min="1" value={item.newQuantity} onChange={e => {
-                      const newItems = [...reorderData.items];
-                      newItems[idx].newQuantity = e.target.value;
-                      setReorderData({ ...reorderData, items: newItems });
-                    }} />
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-end gap-4">
-                <button onClick={submitReorder} className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">Confirm</button>
-                <button onClick={() => setShowReorderForm(false)} className="bg-gray-400 hover:bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
+    <p className="font-bold mt-4">Total: ₹{order.total_price}</p>
+
+    {/* Buttons */}
+    <div className="flex flex-wrap gap-3 mt-4">
+      <button onClick={() => downloadInvoice(order)} className="bg-blue-500 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-blue-600"><FaFileInvoice /> Invoice</button>
+      <button onClick={() => sendInvoiceEmail(order.id)} className="bg-yellow-500 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-yellow-600"><FaEnvelope /> Email</button>
+
+      {order.status?.trim().toLowerCase() === 'pending' && (
+        <button onClick={() => cancelOrder(order.id)} className="bg-red-500 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-red-600"><FaTimes /> Cancel</button>
+      )}
+
+      {order.status?.trim().toLowerCase() === 'canceled' && order.items.every(item => item.stock === undefined || item.stock > 0) && (
+        <button onClick={() => reorder(order)} className="bg-green-600 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-green-700"><FaRedo /> Reorder</button>
+      )}
+
+      {order.payment_status !== 'Paid' && order.status!== 'Canceled' && order.payment_method === 'Online Payment (Razorpay)' && (
+        <button onClick={() => handlePayNow(order)} className="bg-green-700 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-green-800">
+          💳 Pay Now
+        </button>
+      )}
+
+      {order.tracking_id && order.status !== 'Canceled' && (
+        <button onClick={() => navigate(`/track-order/${order.tracking_id}`)} className="bg-indigo-600 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-indigo-700">
+          <FaRoute /> Track Order
+        </button>
+      )}
+
+      
+    </div>
+  </div>
+))}
+
 
         <div className="flex justify-center items-center gap-4 mt-6">
           <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50">Prev</button>

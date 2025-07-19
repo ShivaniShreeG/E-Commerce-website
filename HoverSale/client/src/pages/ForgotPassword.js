@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
+import BASE_URL from '../api';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ function ForgotPassword() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const response = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -38,49 +39,48 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gradient-to-r from-pink-500 to-orange-300 font-sans">
-      <div className="bg-white p-10 rounded-xl shadow-lg w-full max-w-md text-center">
-        <h2 className="text-2xl font-semibold mb-6">Reset Password</h2>
+    <div className="min-h-screen flex items-center justify-center bg-sky-100 px-4">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Reset Password</h2>
 
         {message && (
-          <div className="mb-4 font-semibold text-green-600">{message}</div>
+          <div className="mb-4 text-green-600 font-medium">{message}</div>
         )}
         {error && (
-          <div className="mb-4 font-semibold text-red-600">{error}</div>
+          <div className="mb-4 text-red-600 font-medium">{error}</div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-  <input
-    type="email"
-    placeholder="Enter your email"
-    value={email}
-    onChange={(e) => {
-      setEmail(e.target.value);
-      setMessage('');
-      setError('');
-    }}
-    required
-    className="w-full px-4 py-3 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-pink-400"
-  />
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setMessage('');
+              setError('');
+            }}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-sky-400"
+          />
 
-  {/* Buttons in a flex row with gap */}
-  <div className="flex justify-center gap-4">
-    <button
-      type="submit"
-      className="w-1/2 py-3 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition duration-200"
-    >
-      Send Reset Link
-    </button>
+          <div className="flex justify-center gap-4">
+            <button
+              type="submit"
+              className="w-1/2 py-3 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition duration-200"
+            >
+              Send Reset Link
+            </button>
 
-    <button
-      type="button"
-      onClick={() => navigate('/')}
-      className="w-1/2 py-3 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-200"
-    >
-      Back to Login
-    </button>
-  </div>
-</form>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="w-1/2 py-3 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200"
+            >
+              Back to Login
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

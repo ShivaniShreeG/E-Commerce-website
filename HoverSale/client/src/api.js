@@ -1,5 +1,3 @@
-// api.js
-// REPLACE this with your real ngrok HTTPS link
-const BASE_URL = 'https://0429272b077d.ngrok-free.app';
+const BASE_URL = 'http://56.228.18.5';
 
 export default BASE_URL;

@@ -1,16 +1,12 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
+const { getStorage } = require('../utils/cloudinary');
 const db = require('../db');
 
 const router = express.Router();
 
-// Profile image storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '')),
-});
+// ✅ Use Cloudinary storage for 'profile' folder
+const storage = getStorage('profile');
 const upload = multer({ storage });
 
 // ✅ GET profile with joined data from users + profiles
@@ -19,7 +15,6 @@ router.get('/:userId', (req, res) => {
 
   const sql = `
     SELECT 
-      users.username,
       users.email,
       COALESCE(profiles.full_name, '') as full_name,
       COALESCE(profiles.dob, '') as dob,
@@ -38,12 +33,11 @@ router.get('/:userId', (req, res) => {
       return res.status(500).json({ message: 'DB error', error: err.sqlMessage });
     }
     if (results.length === 0) return res.status(404).json({ message: 'User not found' });
-    res.json(results[0]);  // Always return the full data (username, email, and any profile data)
+    res.json(results[0]);
   });
 });
 
-
-// ✅ Create or update profile
+// ✅ Create or update profile using Cloudinary file upload
 router.post('/edit', upload.single('profile_pic'), (req, res) => {
   const {
     user_id,
@@ -54,9 +48,8 @@ router.post('/edit', upload.single('profile_pic'), (req, res) => {
     address
   } = req.body;
 
-  const profile_pic = req.file ? req.file.filename : null;
+  const profile_pic = req.file ? req.file.path : null; // Cloudinary URL
 
-  // ✅ Check if user exists
   db.query('SELECT * FROM users WHERE id = ?', [user_id], (err, userResults) => {
     if (err) {
       console.error('User lookup failed:', err);
@@ -67,7 +60,6 @@ router.post('/edit', upload.single('profile_pic'), (req, res) => {
       return res.status(400).json({ message: 'User does not exist' });
     }
 
-    // ✅ Check if profile exists
     db.query('SELECT * FROM profiles WHERE user_id = ?', [user_id], (err, profileResults) => {
       if (err) {
         console.error('Profile check error:', err);

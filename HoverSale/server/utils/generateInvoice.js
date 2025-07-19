@@ -1,6 +1,6 @@
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
+const streamBuffers = require('stream-buffers');
+const { cloudinary } = require('../utils/cloudinary'); // Ensure this is imported correctly
 
 const generateInvoicePDF = ({
   orderId,
@@ -11,21 +11,24 @@ const generateInvoicePDF = ({
   payment_method,
   status,
   products,
-  grand_total
+  grand_total,
+  logo_url
 }) => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
-    const filePath = path.join(__dirname, `../invoices/Invoice-${orderId}.pdf`);
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+    const bufferStream = new streamBuffers.WritableStreamBuffer();
 
-    // ✅ Optional Logo
-    const logoPath = path.join(__dirname, '../assets/logo1.png');
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 50, 45, { width: 100 });
+    doc.pipe(bufferStream);
+
+    // Optional Logo
+    if (logo_url) {
+      try {
+        doc.image(logo_url, 50, 45, { width: 100 });
+      } catch (err) {
+        console.warn('Logo load failed:', err.message);
+      }
     }
 
-    // ✅ Title and Meta
     doc.font('Helvetica-Bold').fontSize(20).text('HoverSale Invoice', 200, 50, { align: 'right' });
     doc.fontSize(10).text(`Invoice #: ${orderId}`, { align: 'right' });
     doc.text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
@@ -33,7 +36,7 @@ const generateInvoicePDF = ({
     doc.moveDown(2);
     doc.strokeColor('#aaaaaa').lineWidth(1).moveTo(50, 130).lineTo(550, 130).stroke();
 
-    // ✅ Customer Info
+    // Customer Info
     doc.moveDown(1);
     doc.font('Helvetica-Bold').fontSize(12).text('Customer Information:', { underline: true });
     doc.font('Helvetica').fontSize(11);
@@ -47,12 +50,11 @@ const generateInvoicePDF = ({
     doc.moveDown(1);
     doc.strokeColor('#aaaaaa').lineWidth(1).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
-    // ✅ Order Summary (Table)
+    // Order Summary
     doc.moveDown(1.5);
     doc.font('Helvetica-Bold').fontSize(12).text('Order Summary:', { underline: true });
     doc.moveDown(0.5);
 
-    // Table Header
     doc.font('Helvetica-Bold').fontSize(11);
     doc.text('Product', 50, doc.y);
     doc.text('Qty', 300, doc.y);
@@ -60,7 +62,6 @@ const generateInvoicePDF = ({
     doc.moveDown(0.5);
     doc.strokeColor('#cccccc').moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
-    // Table Rows
     doc.font('Helvetica').fontSize(11);
     products.forEach(product => {
       doc.text(product.name, 50, doc.y + 5);
@@ -69,13 +70,11 @@ const generateInvoicePDF = ({
       doc.moveDown(1);
     });
 
-    // Grand Total
     doc.moveDown(1);
     doc.font('Helvetica-Bold').fontSize(12);
     doc.text('Grand Total:', 300, doc.y);
     doc.text(`₹${grand_total.toFixed(2)}`, 400, doc.y, { align: 'right' });
 
-    // ✅ Footer
     doc.moveDown(2);
     doc.fontSize(12).text('Thank you for shopping with HoverSale!', {
       align: 'center',
@@ -84,8 +83,28 @@ const generateInvoicePDF = ({
 
     doc.end();
 
-    stream.on('finish', () => resolve(filePath));
-    stream.on('error', reject);
+    bufferStream.on('finish', () => {
+      const buffer = bufferStream.getContents();
+      const readableBuffer = new streamBuffers.ReadableStreamBuffer();
+      readableBuffer.put(buffer);
+      readableBuffer.stop();
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: 'invoices',
+          public_id: `Invoice-${orderId}`
+        },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(result.secure_url);
+        }
+      );
+
+      readableBuffer.pipe(uploadStream);
+    });
+
+    bufferStream.on('error', reject);
   });
 };
 
