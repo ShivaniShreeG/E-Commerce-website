@@ -39,20 +39,20 @@ router.post('/login', (req, res) => {
 router.get('/users', (req, res) => {
   const userQuery = `
     SELECT 
-      u.id AS user_id,
-      u.email,
-      p.full_name,
-      p.dob,
-      p.gender,
-      p.phone,
-      p.address AS profile_address,
-      p.profile_pic,
-      p.created_at,
-      GROUP_CONCAT(a.address SEPARATOR '; ') AS all_addresses
-    FROM users u
-    LEFT JOIN profiles p ON u.id = p.user_id
-    LEFT JOIN address a ON u.id = a.user_id
-    GROUP BY u.id
+  u.id AS user_id,
+  u.email,
+  MAX(p.full_name) AS full_name,
+  MAX(p.dob) AS dob,
+  MAX(p.gender) AS gender,
+  MAX(p.phone) AS phone,
+  MAX(p.address) AS profile_address,
+  MAX(p.profile_pic) AS profile_pic,
+  MAX(p.created_at) AS created_at,
+  GROUP_CONCAT(a.address SEPARATOR '; ') AS all_addresses
+FROM users u
+LEFT JOIN profiles p ON u.id = p.user_id
+LEFT JOIN address a ON u.id = a.user_id
+GROUP BY u.id, u.email
   `;
 
   db.query(userQuery, (err, results) => {

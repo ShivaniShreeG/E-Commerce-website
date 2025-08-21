@@ -83,40 +83,55 @@ router.post('/send-otp', (req, res) => {
 router.post('/verify-otp', async (req, res) => {
   const { name, email, phone, password, confirmPassword, address, otp } = req.body;
 
-  if (!name || !email || !phone || !password || !confirmPassword || !address || !otp)
-    return res.status(400).json({ message: 'All fields are required' });
+  try {
+    // 1. Validate input
+    if (!name || !email || !phone || !password || !confirmPassword || !address || !otp) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
+    }
 
-  if (password !== confirmPassword)
-    return res.status(400).json({ message: 'Passwords do not match' });
+    // 2. OTP check
+    const stored = otpStore[email];
+    if (!stored || stored.code !== otp || stored.expires < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
 
-  const stored = otpStore[email];
-  if (!stored || stored.code !== otp || stored.expires < Date.now()) {
-    return res.status(400).json({ message: 'Invalid or expired OTP' });
+    // 3. Check for duplicate email
+    db.query('SELECT id FROM users WHERE email = ?', [email], async (err, results) => {
+      if (err) return res.status(500).json({ message: 'Database error' });
+      if (results.length > 0) return res.status(400).json({ message: 'Email already exists' });
+
+      // 4. Insert into users
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const userSql = 'INSERT INTO users (name, email, phone, password, address) VALUES (?, ?, ?, ?, ?)';
+      db.query(userSql, [name, email, phone, hashedPassword, address], (err, result) => {
+        if (err) return res.status(500).json({ message: 'User registration failed' });
+
+        const userId = result.insertId;
+
+        // 5. Auto-create profile
+        const profileSql = `
+          INSERT INTO profiles (user_id, full_name, phone, address)
+          VALUES (?, ?, ?, ?)
+        `;
+        db.query(profileSql, [userId, name, phone, address], (profileErr) => {
+  if (profileErr) {
+    console.error('Profile insert failed:', profileErr.sqlMessage);
+    return res.status(500).json({ message: 'Profile creation failed' });
   }
-
-  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
-    if (err) return res.status(500).json({ message: 'Database error' });
-    if (results.length > 0) return res.status(400).json({ message: 'Email already exists' });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = 'INSERT INTO users (name, email, phone, password, address) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [name, email, phone, hashedPassword, address], (err, result) => {
-      if (err) return res.status(500).json({ message: 'Registration failed' });
-
-      const userId = result.insertId;
-      const profileSql = 'INSERT INTO profiles (user_id, full_name, phone, address) VALUES (?, ?, ?, ?)';
-      db.query(profileSql, [userId, name, phone, address], (profileErr) => {
-        if (profileErr) {
-          console.error('Profile insert failed:', profileErr);
-          return res.status(500).json({ message: 'Profile insert failed' });
-        }
-
-        delete otpStore[email];
-        res.status(200).json({ success: true, message: 'Registered successfully', userId });
+  delete otpStore[email];
+  res.status(201).json({ success: true, message: 'Registered successfully', userId });
+        });
       });
     });
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
+
 
 // ✅ Login
 router.post('/login', (req, res) => {

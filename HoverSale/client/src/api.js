@@ -1,3 +1,3 @@
-const BASE_URL = 'http://56.228.18.5';
+const BASE_URL = 'https://hover-sale-backend.onrender.com';
 
 export default BASE_URL;

@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const path = require('path');
 require('dotenv').config();
 
@@ -30,7 +29,9 @@ app.use(cors({
   origin: '*', // or restrict to your frontend domain
   credentials: true
 }));
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 
 // ✅ All Routes

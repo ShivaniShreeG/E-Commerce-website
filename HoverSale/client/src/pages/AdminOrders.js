@@ -229,30 +229,40 @@ const AdminOrdersPage = () => {
                 <p><strong>Customer:</strong> {order.name}</p>
                 <p><strong>Payment:</strong> {order.payment_method}</p>
 
-                <div className="mt-2 flex gap-2 items-center">
-                  <label className="font-semibold">Payment Status:</label>
-                  <select
-                    value={order.payment_status || 'Unpaid'}
-                    onChange={(e) => {
-                      const newStatus = e.target.value;
-                      setOrders(prev =>
-                        prev.map(o =>
-                          o.id === order.id ? { ...o, payment_status: newStatus } : o
-                        )
-                      );
-                    }}
-                    className="border px-2 py-1 rounded"
-                  >
-                    <option value="Unpaid">Unpaid</option>
-                    <option value="Paid">Paid</option>
-                  </select>
-                  <button
-                    onClick={() => updatePaymentStatus(order.id, order.payment_status || 'Unpaid')}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  >
-                    Save
-                  </button>
-                </div>
+                {order.status === 'Canceled' ? (
+  <div className="mt-2">
+    <label className="font-semibold">Payment Status:</label>
+    <span className="ml-2 text-red-600 font-semibold">
+      {order.payment_status || 'Unpaid'} (Locked due to cancellation)
+    </span>
+  </div>
+) : (
+  <div className="mt-2 flex gap-2 items-center">
+    <label className="font-semibold">Payment Status:</label>
+    <select
+      value={order.payment_status || 'Unpaid'}
+      onChange={(e) => {
+        const newStatus = e.target.value;
+        setOrders(prev =>
+          prev.map(o =>
+            o.id === order.id ? { ...o, payment_status: newStatus } : o
+          )
+        );
+      }}
+      className="border px-2 py-1 rounded"
+    >
+      <option value="Unpaid">Unpaid</option>
+      <option value="Paid">Paid</option>
+    </select>
+    <button
+      onClick={() => updatePaymentStatus(order.id, order.payment_status || 'Unpaid')}
+      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+    >
+      Save
+    </button>
+  </div>
+)}
+
 
                 {order.payment_method !== 'Cash on Delivery' && order.razorpay_payment_id && (
                   <p><strong>Razorpay ID:</strong> {order.razorpay_payment_id}</p>

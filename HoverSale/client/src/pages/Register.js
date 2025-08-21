@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiCheckCircle } from "react-icons/fi";
+import { FiCheckCircle, FiEye, FiEyeOff } from "react-icons/fi";
 import BASE_URL from "../api";
 
 function Register() {
@@ -19,6 +19,20 @@ function Register() {
   const [success, setSuccess] = useState(false);
   const [timer, setTimer] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/api/logos`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setLogoUrl(data[0].image_url);
+        }
+      })
+      .catch(err => console.error("Logo fetch error:", err));
+  }, []);
 
   useEffect(() => {
     let interval;
@@ -46,10 +60,8 @@ function Register() {
       });
 
       const data = await res.json();
-      console.log("OTP response:", data);
-
       if (res.ok && data.success) {
-        setMessage("OTP sent to your email.");
+        setMessage("OTP sent successfully");
         setSuccess(true);
         setIsOtpSent(true);
         setTimer(60);
@@ -59,7 +71,7 @@ function Register() {
       }
     } catch (err) {
       console.error("OTP Send Error:", err);
-      setMessage("Server unreachable or network error");
+      setMessage("Server error. Try again.");
       setSuccess(false);
     }
     setLoading(false);
@@ -97,8 +109,6 @@ function Register() {
       });
 
       const data = await res.json();
-      console.log("Verify response:", data);
-
       if (res.ok && data.success) {
         setMessage("Registered successfully");
         setSuccess(true);
@@ -109,57 +119,129 @@ function Register() {
       }
     } catch (err) {
       console.error("Verify Error:", err);
-      setMessage("Server unreachable or network error");
+      setMessage("Server error. Try again.");
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-sky-200 to-sky-100 px-4 py-10">
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-md text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
-          Create Account
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-200 to-sky-100 px-4 py-10">
+      <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center animate-fade-in">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt="Logo"
+            className="w-16 sm:w-20 h-16 sm:h-20 mx-auto mb-4 rounded-full object-cover shadow hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full animate-pulse" />
+        )}
+
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Create Your Account</h2>
 
         {message && (
           <div
-            className={`flex items-center justify-center gap-2 text-sm mb-4 font-semibold ${
+            className={`text-sm mb-4 font-semibold flex items-center justify-center gap-2 ${
               success || message.toLowerCase().includes("otp")
                 ? "text-green-600"
                 : "text-red-600"
             }`}
           >
             {(success || message.toLowerCase().includes("otp")) && (
-              <FiCheckCircle className="text-xl" />
+              <FiCheckCircle className="text-lg" />
             )}
-            {message}
+            <span>
+              {message.includes("OTP sent") ? (
+                <>
+                  OTP sent to{" "}
+                  <span className="text-sky-700 font-bold underline">
+                    {formData.email}
+                  </span>
+                </>
+              ) : (
+                message
+              )}
+            </span>
           </div>
         )}
 
         {!isOtpSent ? (
           <form onSubmit={handleSendOtp} className="space-y-5">
-            {["name", "email", "phone", "address", "password", "confirmPassword"].map((field) => (
+            {["name", "email", "phone", "address"].map((field) => (
               <div className="relative" key={field}>
                 <input
-                  type={field.includes("password") ? "password" : "text"}
+                  type="text"
                   name={field}
                   value={formData[field]}
                   onChange={handleChange}
-                  className="peer w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  className="peer w-full px-3 py-3 border border-sky-400 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
                   required
+                  placeholder=" "
                 />
                 <label
-                  className={`absolute left-3 px-1 bg-white transition-all text-xs text-gray-500
-                    ${formData[field] ? "top-[-8px]" : "top-3 text-sm"} 
-                    peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
+                  className={`absolute left-3 px-1 bg-white text-xs text-gray-500 transition-all ${
+                    formData[field] ? "top-[-8px]" : "top-3 text-sm"
+                  } peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
                 >
-                  {field === "confirmPassword"
-                    ? "Confirm Password"
-                    : field.charAt(0).toUpperCase() + field.slice(1)}
+                  {field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
               </div>
             ))}
+
+            {/* Password */}
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="peer w-full px-3 py-3 border border-sky-400 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                required
+                placeholder=" "
+              />
+              <label
+                className={`absolute left-3 px-1 bg-white text-xs text-gray-500 transition-all ${
+                  formData.password ? "top-[-8px]" : "top-3 text-sm"
+                } peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
+              >
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-3 text-gray-500 hover:text-sky-600"
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="peer w-full px-3 py-3 border border-sky-400 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                required
+                placeholder=" "
+              />
+              <label
+                className={`absolute left-3 px-1 bg-white text-xs text-gray-500 transition-all ${
+                  formData.confirmPassword ? "top-[-8px]" : "top-3 text-sm"
+                } peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
+              >
+                Confirm Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-3 text-gray-500 hover:text-sky-600"
+              >
+                {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
 
             <button
               type="submit"
@@ -178,14 +260,11 @@ function Register() {
                 type="text"
                 value={otp}
                 onChange={handleOtpChange}
-                className="peer w-full p-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                className="peer w-full p-3 border border-sky-400 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-400"
                 required
+                placeholder=" "
               />
-              <label
-                className={`absolute left-3 px-1 bg-white text-xs text-gray-500 transition-all
-                  ${otp ? "top-[-8px]" : "top-3 text-sm"} 
-                  peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
-              >
+              <label className="absolute left-3 px-1 bg-white text-xs text-gray-500 top-3 peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600">
                 OTP
               </label>
             </div>
@@ -206,13 +285,13 @@ function Register() {
               </p>
             ) : (
               <button
-  type="button"
-  onClick={handleResendOtp}
-  disabled={loading}
-  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white py-2 mt-3 rounded-lg font-semibold shadow-sm transition duration-200"
->
-  Resend OTP
-</button>
+                type="button"
+                onClick={handleResendOtp}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white py-2 mt-3 rounded-lg font-semibold shadow-sm transition"
+              >
+                Resend OTP
+              </button>
             )}
           </form>
         )}

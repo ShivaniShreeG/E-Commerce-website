@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BASE_URL from '../api';
 
-const AdminLogin = () => {
+function AdminLogin() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [logoUrl, setLogoUrl] = useState(null);
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/api/logos`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setLogoUrl(data[0].image_url);
+        }
+      })
+      .catch(err => console.error("Logo fetch error:", err));
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -16,7 +28,6 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const res = await fetch(`${BASE_URL}/api/admin/login`, {
         method: "POST",
@@ -25,16 +36,15 @@ const AdminLogin = () => {
       });
 
       const data = await res.json();
-
       if (res.ok && data.admin && data.admin.id) {
         localStorage.setItem('adminId', data.admin.id);
-        localStorage.setItem('isAdmin', 'true');
+        localStorage.setItem('isAdmin', 'true'); // ✅ Important line added here
         setSuccess("Admin login successful!");
         setTimeout(() => {
-          navigate('/admin-dashboard');
+          navigate("/admin-dashboard");
         }, 1500);
       } else {
-        setError(data.message || "Invalid admin credentials");
+        setError(data.message || "Invalid credentials");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -43,34 +53,68 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-sky-100 px-4 sm:px-6">
-      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
-          Admin Login
-        </h2>
+    <div className="min-h-screen flex justify-center items-center bg-sky-100 px-4 py-8 sm:py-16">
+      <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center animate-fade-in">
 
-        {error && <div className="text-red-600 text-sm text-center mb-3">{error}</div>}
-        {success && <div className="text-green-600 text-sm text-center mb-3">{success}</div>}
+        {/* Logo */}
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt="Logo"
+            className="w-16 sm:w-20 h-16 sm:h-20 mx-auto mb-4 rounded-full object-cover shadow hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full animate-pulse" />
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            name="email"
-            placeholder="Admin Email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-sky-400 focus:outline-none text-sm"
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-sky-400 focus:outline-none text-sm"
-          />
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Admin Login</h2>
+
+        {error && <div className="text-red-600 mb-3 font-medium text-sm sm:text-base">{error}</div>}
+        {success && <div className="text-green-600 mb-3 font-medium text-sm sm:text-base">{success}</div>}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          {/* Email */}
+          <div className="relative">
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="peer w-full px-3 py-3 border border-sky-400 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+              required
+              placeholder=" "
+            />
+            <label
+              className={`absolute left-3 px-1 bg-white text-xs text-gray-500 transition-all ${
+                formData.email ? "top-[-8px]" : "top-3 text-sm"
+              } peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
+            >
+              Admin Email
+            </label>
+          </div>
+
+          {/* Password */}
+          <div className="relative">
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="peer w-full px-3 py-3 border border-sky-400 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+              required
+              placeholder=" "
+            />
+            <label
+              className={`absolute left-3 px-1 bg-white text-xs text-gray-500 transition-all ${
+                formData.password ? "top-[-8px]" : "top-3 text-sm"
+              } peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-sky-600`}
+            >
+              Password
+            </label>
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-lg font-semibold transition duration-200"
@@ -79,17 +123,17 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-center text-gray-700">
+        <div className="mt-4 text-sm text-gray-700">
           <span
             onClick={() => navigate('/login')}
             className="text-sky-600 font-semibold cursor-pointer hover:underline"
           >
-            Back to User Login
+            Back to Login
           </span>
-        </p>
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default AdminLogin;

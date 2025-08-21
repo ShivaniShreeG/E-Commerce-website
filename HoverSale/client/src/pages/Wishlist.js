@@ -6,6 +6,7 @@ import BASE_URL from '../api';
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
   const userId = localStorage.getItem('userId');
   const navigate = useNavigate();
 
@@ -15,6 +16,36 @@ const Wishlist = () => {
       .then(data => setWishlist(data))
       .catch(err => console.error('Failed to fetch wishlist:', err));
   }, [userId]);
+  useEffect(() => {
+  // wishlist fetch is already here
+  fetch(`${BASE_URL}/api/cart/${userId}`)
+    .then(res => res.json())
+    .then(data => setCartItems(data))
+    .catch(err => console.error('Failed to fetch cart:', err));
+}, [userId]);
+
+  const isInCart = (productId) => {
+  return cartItems.some(item => item.product_id === productId);
+};
+const handleRemoveFromCart = async (productId) => {
+  try {
+    const res = await fetch(`${BASE_URL}/api/cart`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, productId }),
+    });
+
+    if (res.ok) {
+      setCartItems(prev => prev.filter(item => item.product_id !== productId));
+      Swal.fire('Removed!', 'Item removed from cart.', 'success');
+    } else {
+      Swal.fire('Error!', 'Failed to remove from cart.', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    Swal.fire('Error!', 'Something went wrong.', 'error');
+  }
+};
 
   const handleRemove = async (productId) => {
     const confirm = await Swal.fire({
@@ -122,19 +153,36 @@ const Wishlist = () => {
               />
               <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
               <p className="text-gray-700 mb-2">Price: ₹{item.price}</p>
-              <div className="flex justify-between mt-4">
-                <button
-                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1"
-                  onClick={() => handleAddToCart(item)}
-                >
-                  <FaShoppingCart /> Add to Cart
-                </button>
-                <button
-                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center gap-1"
-                  onClick={() => handleBuyNow(item)}
-                >
-                  <FaBolt /> Buy Now
-                </button>
+
+              <div className="flex justify-between mt-4 items-center">
+                {item.quantity === 0 ? (
+                  <span className="text-red-600 font-bold">Out of Stock</span>
+                ) : (
+                  <>
+                    {isInCart(item.id) ? (
+  <button
+    className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 flex items-center gap-1"
+    onClick={() => handleRemoveFromCart(item.id)}
+  >
+    <FaShoppingCart /> Remove from Cart
+  </button>
+) : (
+  <button
+    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1"
+    onClick={() => handleAddToCart(item)}
+  >
+    <FaShoppingCart /> Add to Cart
+  </button>
+)}
+
+                    <button
+                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center gap-1"
+                      onClick={() => handleBuyNow(item)}
+                    >
+                      <FaBolt /> Buy Now
+                    </button>
+                  </>
+                )}
                 <button
                   className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                   onClick={() => handleRemove(item.id)}

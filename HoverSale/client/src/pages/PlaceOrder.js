@@ -321,9 +321,17 @@ if (fromWishlist && productId) {
           <p className="text-lg font-bold pt-3 border-t border-gray-300 flex items-center gap-2">
             <FaRupeeSign className="text-green-600" /> Grand Total: ₹{totalPrice.toFixed(2)}
           </p>
-          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 font-semibold">
+          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-green-700 font-semibold">
             ✅ Confirm Order
           </button>
+          <button
+    type="button"
+    onClick={() => navigate(-1)}
+    className="w-full bg-blue-600 text-white py-2 rounded hover:bg-red-700 font-semibold"
+  >
+    ❌ Cancel
+  </button>
+
         </div>
       </form>
       <ToastContainer position="top-right" autoClose={3000} />
