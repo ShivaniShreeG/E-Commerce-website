@@ -22,13 +22,13 @@ const ProductsPage = () => {
       .then(data => {
         const inStockProducts = data.filter(product => product.quantity > 0);
         const defaultQuantities = {};
-        inStockProducts.forEach(p => defaultQuantities[p.id] = 1);
+        inStockProducts.forEach(p => (defaultQuantities[p.id] = 1));
         setProducts(Array.isArray(inStockProducts) ? inStockProducts : []);
         setQuantities(defaultQuantities);
         setLoading(false);
       })
       .catch(err => {
-        console.error("Product fetch error:", err);
+        console.error('Product fetch error:', err);
         setLoading(false);
       });
 
@@ -39,7 +39,7 @@ const ProductsPage = () => {
           const wishlistSet = new Set(data.map(item => item.id));
           setWishlistItems(wishlistSet);
         })
-        .catch(err => console.error("Wishlist fetch error:", err));
+        .catch(err => console.error('Wishlist fetch error:', err));
 
       fetch(`${BASE_URL}/api/cart/${userId}`)
         .then(res => res.json())
@@ -47,7 +47,7 @@ const ProductsPage = () => {
           const cartSet = new Set(data.map(item => item.product_id));
           setCartItems(cartSet);
         })
-        .catch(err => console.error("Cart fetch error:", err));
+        .catch(err => console.error('Cart fetch error:', err));
     }
   }, [category, userId]);
 
@@ -59,7 +59,7 @@ const ProductsPage = () => {
       showCancelButton: true,
       confirmButtonText: 'Login',
       cancelButtonText: 'Cancel',
-    }).then((result) => {
+    }).then(result => {
       if (result.isConfirmed) {
         navigate('/login');
       }
@@ -73,7 +73,7 @@ const ProductsPage = () => {
     }));
   };
 
-  const handleAddToCart = (id) => {
+  const handleAddToCart = id => {
     if (!userId) return promptLogin();
 
     const inCart = cartItems.has(id);
@@ -98,10 +98,10 @@ const ProductsPage = () => {
           showConfirmButton: false,
         });
       })
-      .catch(err => console.error("Cart update error:", err));
+      .catch(err => console.error('Cart update error:', err));
   };
 
-  const handleAddToWishlist = (id) => {
+  const handleAddToWishlist = id => {
     if (!userId) return promptLogin();
 
     const inWishlist = wishlistItems.has(id);
@@ -126,38 +126,45 @@ const ProductsPage = () => {
           showConfirmButton: false,
         });
       })
-      .catch(err => console.error("Wishlist update error:", err));
+      .catch(err => console.error('Wishlist update error:', err));
   };
 
-  const handleBuyNow = (product) => {
+  const handleBuyNow = product => {
     if (!userId) return promptLogin();
 
     const quantity = quantities[product.id] || 1;
-    Swal.fire({
-      title: 'Proceed to Buy?',
-      text: `You're about to buy ${quantity} item(s).`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Buy Now',
-    }).then(result => {
-      if (result.isConfirmed) {
-        navigate(`/placeorder?productId=${product.id}&price=${product.price}&quantity=${quantity}`, {
-          state: {
-            productImage: product.image_url,
-            productName: product.name,
-          },
-        });
-      }
+
+    navigate('/placeorder', {
+      state: {
+        fromBuyNow: true,
+        product: {
+          product_id: product.id,
+          productName: product.name,
+          productImage: product.image_url,
+          price: product.price,
+          quantity,
+        },
+        grandTotal: product.price * quantity,
+      },
     });
   };
 
-  if (loading) return <p className="p-5 text-center text-gray-700">Loading products...</p>;
-  if (products.length === 0) return <p className="p-5 text-center text-gray-600">No products found in this category.</p>;
+  if (loading)
+    return <p className="p-5 text-center text-gray-700">Loading products...</p>;
+  if (products.length === 0)
+    return (
+      <p className="p-5 text-center text-gray-600">
+        No products found in this category.
+      </p>
+    );
 
   return (
     <>
       <Navbar onHeightChange={setNavbarHeight} />
-      <div style={{ paddingTop: `${navbarHeight}px` }} className="pb-10 bg-sky-100 min-h-screen">
+      <div
+        style={{ paddingTop: `${navbarHeight}px` }}
+        className="pb-10 bg-sky-100 min-h-screen"
+      >
         <h2 className="text-center text-2xl font-semibold text-gray-800 mb-8 px-4">
           Products in "{category}"
         </h2>
@@ -173,22 +180,34 @@ const ProductsPage = () => {
                 alt={product.name}
                 className="w-full h-48 object-cover rounded-md mb-3"
               />
-              <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                {product.name}
+              </h3>
               <p className="text-sm text-gray-600 mb-1">{product.description}</p>
-              <p className="text-red-600 font-bold text-base mb-2">₹{product.price}</p>
+              <p className="text-red-600 font-bold text-base mb-2">
+                ₹{product.price}
+              </p>
 
               <div className="flex justify-center gap-5 mb-2">
                 <button
                   title="Add to Cart"
                   onClick={() => handleAddToCart(product.id)}
-                  className={`text-xl ${cartItems.has(product.id) ? 'text-green-500' : 'text-gray-700'} hover:scale-125 transition`}
+                  className={`text-xl ${
+                    cartItems.has(product.id)
+                      ? 'text-green-500'
+                      : 'text-gray-700'
+                  } hover:scale-125 transition`}
                 >
                   <FaCartPlus />
                 </button>
                 <button
                   title="Add to Wishlist"
                   onClick={() => handleAddToWishlist(product.id)}
-                  className={`text-xl ${wishlistItems.has(product.id) ? 'text-red-500' : 'text-gray-400'} hover:scale-125 transition`}
+                  className={`text-xl ${
+                    wishlistItems.has(product.id)
+                      ? 'text-red-500'
+                      : 'text-gray-400'
+                  } hover:scale-125 transition`}
                 >
                   <FaHeart />
                 </button>
@@ -197,7 +216,9 @@ const ProductsPage = () => {
               <div className="flex items-center justify-center gap-3 mb-2">
                 <button
                   className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                  onClick={() => handleQuantityChange(product.id, -1, product.quantity)}
+                  onClick={() =>
+                    handleQuantityChange(product.id, -1, product.quantity)
+                  }
                   title="Decrease Quantity"
                 >
                   <FaMinus />
@@ -205,7 +226,9 @@ const ProductsPage = () => {
                 <span>{quantities[product.id]}</span>
                 <button
                   className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                  onClick={() => handleQuantityChange(product.id, 1, product.quantity)}
+                  onClick={() =>
+                    handleQuantityChange(product.id, 1, product.quantity)
+                  }
                   title="Increase Quantity"
                 >
                   <FaPlus />

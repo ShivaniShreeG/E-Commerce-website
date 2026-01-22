@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import BASE_URL from '../api';
 import AdminLayout from '../components/AdminLayout';
 import Swal from 'sweetalert2';
@@ -15,14 +14,6 @@ const AdminOrdersPage = () => {
   const [dateTo, setDateTo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
-  const fetchAll = async () => {
-    await Promise.all([fetchOrders(), fetchStats(), fetchPending()]);
-  };
-
   const fetchOrders = async () => {
     const res = await fetch(`${BASE_URL}/api/admin/orders/orders-with-items`);
     const data = await res.json();
@@ -34,6 +25,21 @@ const AdminOrdersPage = () => {
     const data = await res.json();
     setStats(data || {});
   };
+
+  const fetchPending = async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/orders/pending`);
+    const data = await res.json();
+    setPending(data);
+  };
+
+  // ✅ wrapped in useCallback so it's stable
+  const fetchAll = useCallback(async () => {
+    await Promise.all([fetchOrders(), fetchStats(), fetchPending()]);
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]); // ✅ fixed dependency
 
   const updatePaymentStatus = async (orderId, payment_status) => {
     try {
@@ -48,12 +54,6 @@ const AdminOrdersPage = () => {
       console.error(err);
       Swal.fire('Error', 'Failed to update payment status', 'error');
     }
-  };
-
-  const fetchPending = async () => {
-    const res = await fetch(`${BASE_URL}/api/admin/orders/pending`);
-    const data = await res.json();
-    setPending(data);
   };
 
   const updateOrder = async (id, status, tracking_id, estimated_delivery, courier_name, courier_tracking_url) => {
@@ -87,9 +87,14 @@ const AdminOrdersPage = () => {
   };
 
   const handleSaveOrder = async (order) => {
-    const updates = editedOrders[order.id];
-    if (!updates) return;
+  const updates = editedOrders[order.id];
 
+  if (!updates) {
+    Swal.fire('No changes', 'You haven’t made any changes.', 'info');
+    return;
+  }
+
+  try {
     await updateOrder(
       order.id,
       updates.status || order.status,
@@ -99,12 +104,27 @@ const AdminOrdersPage = () => {
       updates.courier_tracking_url ?? order.courier_tracking_url
     );
 
+    // Update UI instantly after saving
+    setOrders(prevOrders =>
+      prevOrders.map(o =>
+        o.id === order.id ? { ...o, ...updates } : o
+      )
+    );
+
+    // Clear the edited state for this order
     setEditedOrders(prev => {
       const copy = { ...prev };
       delete copy[order.id];
       return copy;
     });
-  };
+
+    Swal.fire('Success', 'Order updated successfully!', 'success');
+  } catch (error) {
+    console.error(error);
+    Swal.fire('Error', 'Failed to update order.', 'error');
+  }
+};
+
 
   const filtered = useMemo(() =>
     orders.filter(o => {
@@ -276,10 +296,10 @@ const AdminOrdersPage = () => {
   ) : (
     <>
       <select
-        value={editedOrders[order.id]?.status || order.status}
-        onChange={e => handleOrderFieldChange(order.id, 'status', e.target.value)}
-        className="border px-2 py-1 rounded"
-      >
+  value={editedOrders[order.id]?.status || order.status}
+  onChange={e => handleOrderFieldChange(order.id, 'status', e.target.value)}
+  className="border px-2 py-1 rounded"
+>
         <option value="Pending">Pending</option>
         <option value="Packed">Packed</option>
         <option value="Shipped">Shipped</option>

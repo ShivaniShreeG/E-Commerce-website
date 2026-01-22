@@ -6,9 +6,13 @@ import { FaMapMarkerAlt, FaPlus, FaRupeeSign, FaTruck, FaCreditCard } from 'reac
 import 'react-toastify/dist/ReactToastify.css';
 import BASE_URL from '../api';
 
+
+
 const PlaceOrder = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
+  const fromBuyNow = state?.fromBuyNow || false;
+const buyNowProduct = state?.product || null;
   const searchParams = new URLSearchParams(window.location.search);
   const userId = localStorage.getItem('userId');
 
@@ -46,18 +50,30 @@ const PlaceOrder = () => {
   }, [userId]);
 
   useEffect(() => {
-    let total = 0;
-    if (fromCart && cartItems.length) {
-      total = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
-    } else if (fromReorder && reorderItems.length) {
-      total = reorderItems.reduce((s, i) => s + i.price * i.quantity, 0);
-    } else if ((fromWishlist || productId) && price) {
-      total = price * quantityFromUrl;
-    }
-    setTotalPrice(Number(total.toFixed(2)));
-  }, [cartItems, reorderItems, productId, price, quantityFromUrl, fromCart, fromReorder, fromWishlist]);
+  let total = 0;
+  if (fromBuyNow && buyNowProduct) {
+    total = buyNowProduct.price * buyNowProduct.quantity;
+  } else if (fromCart && cartItems.length) {
+    total = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  } else if (fromReorder && reorderItems.length) {
+    total = reorderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  } else if ((fromWishlist || productId) && price) {
+    total = price * quantityFromUrl;
+  }
+  setTotalPrice(Number(total.toFixed(2)));
+}, [fromBuyNow, buyNowProduct, cartItems, reorderItems, productId, price, quantityFromUrl, fromCart, fromReorder, fromWishlist]);
+
 
   const gatherItems = () => {
+    if (fromBuyNow && buyNowProduct) {
+    return [{
+      product_id: buyNowProduct.id ?? buyNowProduct.product_id,
+      productName: buyNowProduct.name ?? buyNowProduct.productName ?? `Product ${buyNowProduct.id ?? buyNowProduct.product_id}`,
+      productImage: buyNowProduct.image_url ?? buyNowProduct.productImage ?? '',
+      price: Number(buyNowProduct.price) || 0,
+      quantity: Number(buyNowProduct.quantity) || 1,
+    }];
+  }
     if (fromCart && cartItems.length) return cartItems;
     if (fromReorder && reorderItems.length) return reorderItems;
     if (fromWishlist && state?.cartItems?.length) return state.cartItems;

@@ -1,21 +1,21 @@
 {
   "files": {
-    "main.css": "/static/css/main.a6be420d.css",
-    "main.js": "/static/js/main.79fb5cf2.js",
-    "static/js/239.8842cf4e.chunk.js": "/static/js/239.8842cf4e.chunk.js",
-    "static/js/977.2e3d5464.chunk.js": "/static/js/977.2e3d5464.chunk.js",
-    "static/js/455.7a1324ab.chunk.js": "/static/js/455.7a1324ab.chunk.js",
-    "static/js/453.46dc3e92.chunk.js": "/static/js/453.46dc3e92.chunk.js",
-    "index.html": "/index.html",
-    "main.a6be420d.css.map": "/static/css/main.a6be420d.css.map",
-    "main.79fb5cf2.js.map": "/static/js/main.79fb5cf2.js.map",
-    "239.8842cf4e.chunk.js.map": "/static/js/239.8842cf4e.chunk.js.map",
-    "977.2e3d5464.chunk.js.map": "/static/js/977.2e3d5464.chunk.js.map",
-    "455.7a1324ab.chunk.js.map": "/static/js/455.7a1324ab.chunk.js.map",
-    "453.46dc3e92.chunk.js.map": "/static/js/453.46dc3e92.chunk.js.map"
+    "main.css": "/HoverSale/static/css/main.a6be420d.css",
+    "main.js": "/HoverSale/static/js/main.f34ce45e.js",
+    "static/js/239.8842cf4e.chunk.js": "/HoverSale/static/js/239.8842cf4e.chunk.js",
+    "static/js/977.2e3d5464.chunk.js": "/HoverSale/static/js/977.2e3d5464.chunk.js",
+    "static/js/455.7a1324ab.chunk.js": "/HoverSale/static/js/455.7a1324ab.chunk.js",
+    "static/js/453.46dc3e92.chunk.js": "/HoverSale/static/js/453.46dc3e92.chunk.js",
+    "index.html": "/HoverSale/index.html",
+    "main.a6be420d.css.map": "/HoverSale/static/css/main.a6be420d.css.map",
+    "main.f34ce45e.js.map": "/HoverSale/static/js/main.f34ce45e.js.map",
+    "239.8842cf4e.chunk.js.map": "/HoverSale/static/js/239.8842cf4e.chunk.js.map",
+    "977.2e3d5464.chunk.js.map": "/HoverSale/static/js/977.2e3d5464.chunk.js.map",
+    "455.7a1324ab.chunk.js.map": "/HoverSale/static/js/455.7a1324ab.chunk.js.map",
+    "453.46dc3e92.chunk.js.map": "/HoverSale/static/js/453.46dc3e92.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.a6be420d.css",
-    "static/js/main.79fb5cf2.js"
+    "static/js/main.f34ce45e.js"
   ]
 }
